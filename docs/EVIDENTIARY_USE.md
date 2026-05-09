@@ -1,6 +1,6 @@
 # Evidentiary Use Guide
 
-**Last updated:** [today's date — fill in when you commit, format YYYY-MM-DD]
+**Last updated:** [2026-05-09 — fill in when you commit, format YYYY-MM-DD]
 
 ## Read this first
 

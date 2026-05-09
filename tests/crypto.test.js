@@ -60,6 +60,38 @@ describe('deriveKey', () => {
     const blob = await encrypt(k1, 'hello');
     assert.equal(await decrypt(k2, blob), 'hello');
   });
+  test('rejects passphrase shorter than MIN_PASSPHRASE_LENGTH', async () => {
+    await assert.rejects(
+      () => deriveKey('password', generateSalt()),
+      /at least 12 characters/
+    );
+  });
+  test('rejects empty string', async () => {
+    await assert.rejects(
+      () => deriveKey('', generateSalt()),
+      /at least 12 characters/
+    );
+  });
+  test('rejects null passphrase', async () => {
+    await assert.rejects(
+      () => deriveKey(null, generateSalt()),
+      /at least 12 characters/
+    );
+  });
+  test('rejects non-string passphrase', async () => {
+    await assert.rejects(
+      () => deriveKey(123456789012, generateSalt()),
+      /at least 12 characters/
+    );
+    await assert.rejects(
+      () => deriveKey(undefined, generateSalt()),
+      /at least 12 characters/
+    );
+  });
+  test('accepts passphrase exactly MIN_PASSPHRASE_LENGTH long', async () => {
+    const key = await deriveKey('a'.repeat(MIN_PASSPHRASE_LENGTH), generateSalt());
+    assert.equal(key.algorithm.name, 'AES-GCM');
+  });
 });
 
 describe('encrypt / decrypt', () => {

@@ -18,6 +18,9 @@ function generateIV() {
 }
 
 export async function deriveKey(passphrase, salt) {
+  if (typeof passphrase !== 'string' || passphrase.length < MIN_PASSPHRASE_LENGTH) {
+    throw new Error(`Passphrase must be at least ${MIN_PASSPHRASE_LENGTH} characters`);
+  }
   const baseKey = await subtle.importKey(
     'raw',
     new TextEncoder().encode(passphrase),

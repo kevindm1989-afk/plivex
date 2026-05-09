@@ -139,6 +139,21 @@ export async function getLatestEntry(db) {
   return value;
 }
 
+export async function getAllEntriesById(db) {
+  const tx = db.transaction(STORE_ENTRIES, 'readonly');
+  const all = await tx.store.getAll();
+  await tx.done;
+  return all;
+}
+
+export async function getMetaRecord(db, key) {
+  return db.get(STORE_META, key);
+}
+
+export async function putMetaRecord(db, key, value) {
+  return db.put(STORE_META, { key, value });
+}
+
 export async function getEntryByUuid(db, uuid) {
   return db.getFromIndex(STORE_ENTRIES, INDEX_UUID, uuid);
 }

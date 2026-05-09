@@ -267,6 +267,43 @@ function wipeSection(controller) {
   ]);
 }
 
+function autoLockSection() {
+  const status = el('p', { class: 'inline-status', role: 'status' });
+  const current = app.getAutoLockMinutes();
+  const select = el('select', {
+    id: 'auto-lock-minutes',
+    class: 'select',
+    onChange: async (e) => {
+      const minutes = Number(e.target.value);
+      status.className = 'inline-status';
+      status.textContent = 'Saving…';
+      try {
+        await app.setAutoLockMinutes(minutes);
+        status.className = 'inline-status success';
+        status.textContent = `Auto-lock set to ${minutes} minute${minutes === 1 ? '' : 's'}.`;
+      } catch (err) {
+        status.className = 'inline-status error';
+        status.textContent = `Could not save: ${err.message}`;
+      }
+    }
+  });
+  for (const m of app.ALLOWED_AUTO_LOCK_MINUTES) {
+    const opt = el('option', {
+      value: String(m),
+      attrs: m === current ? { selected: '' } : {}
+    }, [`${m} minute${m === 1 ? '' : 's'}`]);
+    select.appendChild(opt);
+  }
+  return section('Auto-lock', [
+    el('p', { class: 'lede' }, [
+      'Plivex locks itself after this much inactivity. Wall-clock based, so backgrounding the app does not pause the timer.'
+    ]),
+    el('label', { for: 'auto-lock-minutes', class: 'field-label' }, ['Lock after']),
+    select,
+    status
+  ]);
+}
+
 function aboutSection() {
   return section('About', [
     el('dl', { class: 'about-list' }, [
@@ -327,6 +364,7 @@ export function render(root, controller) {
     el('section', { class: 'screen settings' }, [
       topbar,
       changePassphraseSection(controller),
+      autoLockSection(),
       exportSection(),
       importSection(controller),
       verifySection(),

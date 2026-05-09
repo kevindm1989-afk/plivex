@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'plivex-v4';
+const CACHE_VERSION = 'plivex-v5';
 
 const APP_SHELL = [
   './',

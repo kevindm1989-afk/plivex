@@ -12,7 +12,7 @@ export function Button({ label, onClick, variant = 'primary', disabled = false, 
       class: cls.join(' '),
       type,
       disabled: disabled === true ? true : undefined,
-      onClick: disabled ? undefined : onClick
+      onClick
     },
     children
   );

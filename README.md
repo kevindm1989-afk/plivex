@@ -46,6 +46,14 @@ Because everything is local, **uninstalling the app or clearing your browser dat
 
 This is the entire source. Nothing runs anywhere else. You are welcome to read it, audit it, fork it, or self-host your own copy.
 
+### Third-party code
+
+The `vendor/` directory contains third-party JavaScript that ships verbatim alongside the app, so the source in this repository exactly matches what runs in your browser. There is no build step and no runtime download from a CDN or package registry.
+
+- `vendor/idb.js` — `idb` by Jake Archibald (ISC). A small Promise wrapper around the browser's IndexedDB API. Each vendored file carries a header comment with the upstream version, source URL, license, and a SHA-256 hash of the upstream content for verification.
+
+Updates to vendored files happen by replacing the entire file and bumping the header — no in-place patching.
+
 ## Contributions
 
 This is a personal project published in my individual capacity. I'm not actively recruiting contributors. Pull requests are welcome but may not receive timely responses. If you want changes, the simplest path is to fork.

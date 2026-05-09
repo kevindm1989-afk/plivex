@@ -472,6 +472,73 @@ describe('export / import', () => {
     assert.equal(result.ok, false);
     assert.equal(result.reason, 'malformed');
   });
+
+  // Local mirrors of the canonicalization + hashing helpers in src/app.js
+  // so the test can recompute export_hash after tampering with a payload.
+  function canonicalSort(value) {
+    if (value === null || typeof value !== 'object') return value;
+    if (Array.isArray(value)) return value.map(canonicalSort);
+    const out = {};
+    for (const k of Object.keys(value).sort()) out[k] = canonicalSort(value[k]);
+    return out;
+  }
+  async function rehash(body) {
+    const text = JSON.stringify(canonicalSort(body));
+    const digest = await globalThis.crypto.subtle.digest(
+      'SHA-256',
+      new TextEncoder().encode(text)
+    );
+    const bytes = new Uint8Array(digest);
+    let hex = '';
+    for (let i = 0; i < bytes.length; i++) hex += bytes[i].toString(16).padStart(2, '0');
+    return hex;
+  }
+
+  test('import is atomic — duplicate uuid causes full rollback', async (t) => {
+    await freshAndUnlocked(t);
+    await app.createEntry({ msg: 'one' });
+    await app.createEntry({ msg: 'two' });
+    const backup = await app.exportBackup();
+    // Tamper: duplicate uuid violates the by_uuid unique index, forcing
+    // the import transaction to abort.
+    backup.entries[1].uuid = backup.entries[0].uuid;
+    const { export_hash, ...body } = backup;
+    backup.export_hash = await rehash(body);
+    await app.lock();
+    await app.wipe();
+
+    const result = await app.importBackup(backup);
+    assert.equal(result.ok, false);
+    assert.equal(result.reason, 'import_failed');
+    // After abort, no partial state: status is 'uninitialized'.
+    const status = await app.getStatus();
+    assert.equal(status.status, 'uninitialized');
+  });
+
+  test('after a failed import, retry with a valid backup succeeds', async (t) => {
+    await freshAndUnlocked(t);
+    await app.createEntry({ msg: 'a' });
+    const validBackup = await app.exportBackup();
+    const tampered = JSON.parse(JSON.stringify(validBackup));
+    tampered.entries.push({ ...tampered.entries[0] });
+    const { export_hash, ...body } = tampered;
+    tampered.export_hash = await rehash(body);
+    await app.lock();
+    await app.wipe();
+
+    const fail = await app.importBackup(tampered);
+    assert.equal(fail.ok, false);
+
+    const ok = await app.importBackup(validBackup);
+    assert.equal(ok.ok, true);
+    assert.equal(ok.count, 1);
+    assert.equal((await app.getStatus()).status, 'locked');
+    const unlock = await app.unlock(PASSPHRASE);
+    assert.equal(unlock.ok, true);
+    const list = await app.listEntries();
+    assert.equal(list.length, 1);
+    assert.deepEqual(list[0].payload, { msg: 'a' });
+  });
 });
 
 describe('getStatus', () => {

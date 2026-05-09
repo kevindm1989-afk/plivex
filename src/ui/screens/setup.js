@@ -2,7 +2,6 @@ import { el, clear } from '../dom.js';
 import { Input } from '../components/input.js';
 import { Button } from '../components/button.js';
 import { StrengthMeter } from '../components/strength-meter.js';
-import { alertDialog } from '../components/dialog.js';
 import * as app from '../../app.js';
 
 export function render(root, controller) {
@@ -71,7 +70,10 @@ export function render(root, controller) {
   });
 
   const updateButton = () => {
-    const ok = !busy && pass.length > 0 && pass === confirmPass && lastScore >= 1;
+    // Strength gate: require score >= 2 ("fair") so we reject 12-char
+    // all-lowercase passphrases that pass crypto.deriveKey's hard floor of
+    // length 12 but offer minimal entropy. Bump from >=1 in v1.1.
+    const ok = !busy && pass.length > 0 && pass === confirmPass && lastScore >= 2;
     createBtn.disabled = !ok;
   };
 
@@ -113,6 +115,118 @@ export function render(root, controller) {
     }
   }, ['What is Plivex?']);
 
+  const restoreLink = el('button', {
+    type: 'button',
+    class: 'link-button',
+    onClick: () => {
+      createSection.setAttribute('hidden', '');
+      restoreSection.removeAttribute('hidden');
+      setTimeout(() => fileInput.focus(), 0);
+    }
+  }, ['Restore from backup']);
+
+  const createSection = el('div', { class: 'setup-create' }, [
+    passInput.wrap,
+    meter.wrap,
+    confirmInput.wrap,
+    mismatchEl,
+    errorEl,
+    createBtn,
+    el('div', { class: 'screen-footer' }, [restoreLink])
+  ]);
+
+  // ---- Restore mode ----------------------------------------------------
+
+  let parsedBackup = null;
+  const previewEl = el('p', { class: 'import-preview' });
+  const restoreErrorEl = el('p', { class: 'screen-error', role: 'alert' });
+  let restoreBusy = false;
+
+  const fileInput = el('input', {
+    type: 'file',
+    accept: 'application/json,.json',
+    class: 'file-input',
+    onChange: async (e) => {
+      restoreErrorEl.textContent = '';
+      previewEl.textContent = '';
+      parsedBackup = null;
+      confirmRestoreBtn.disabled = true;
+      const file = e.target.files?.[0];
+      if (!file) return;
+      try {
+        const text = await file.text();
+        parsedBackup = JSON.parse(text);
+      } catch {
+        restoreErrorEl.textContent = 'Could not parse file as JSON.';
+        return;
+      }
+      const count = Array.isArray(parsedBackup.entries) ? parsedBackup.entries.length : 0;
+      const exportedAt = parsedBackup.exported_at ?? 'unknown date';
+      previewEl.textContent =
+        `This backup contains ${count} entries from ${exportedAt}. Restoring will replace any current data.`;
+      confirmRestoreBtn.disabled = false;
+    }
+  });
+
+  const confirmRestoreBtn = Button({
+    label: 'Restore',
+    full: true,
+    disabled: true,
+    onClick: async () => {
+      if (restoreBusy || !parsedBackup) return;
+      restoreBusy = true;
+      confirmRestoreBtn.disabled = true;
+      restoreErrorEl.textContent = '';
+      const result = await app.importBackup(parsedBackup);
+      if (result.ok) {
+        controller.refresh();
+        return;
+      }
+      restoreBusy = false;
+      confirmRestoreBtn.disabled = false;
+      if (result.reason === 'hash_mismatch') {
+        restoreErrorEl.textContent = 'Backup file is corrupted or has been tampered with.';
+      } else if (result.reason === 'malformed') {
+        restoreErrorEl.textContent = `Invalid backup file: ${result.detail}.`;
+      } else if (result.reason === 'import_failed') {
+        restoreErrorEl.textContent = `Restore failed: ${result.detail}.`;
+      } else {
+        restoreErrorEl.textContent = 'Restore failed.';
+      }
+    }
+  });
+
+  const cancelRestoreLink = el('button', {
+    type: 'button',
+    class: 'link-button',
+    onClick: () => {
+      restoreSection.setAttribute('hidden', '');
+      createSection.removeAttribute('hidden');
+      restoreErrorEl.textContent = '';
+      previewEl.textContent = '';
+      parsedBackup = null;
+      confirmRestoreBtn.disabled = true;
+      fileInput.value = '';
+      setTimeout(() => passInput.input.focus(), 0);
+    }
+  }, ['Back to create']);
+
+  const restoreSection = el('div', { class: 'setup-restore', hidden: true }, [
+    el('p', { class: 'lede' }, [
+      'Restore a Plivex backup. You will need the passphrase that was set when the backup was made.'
+    ]),
+    el('label', { class: 'file-input-label' }, [
+      el('span', {}, ['Choose backup file']),
+      fileInput
+    ]),
+    previewEl,
+    restoreErrorEl,
+    confirmRestoreBtn,
+    el('div', { class: 'screen-footer' }, [cancelRestoreLink])
+  ]);
+
+  // ---- Compose --------------------------------------------------------
+
   const form = el('form', {
     class: 'screen setup',
     onSubmit: (e) => { e.preventDefault(); if (!createBtn.disabled) submit(); }
@@ -121,12 +235,8 @@ export function render(root, controller) {
     el('p', { class: 'lede' }, [
       'Create a passphrase to encrypt your notes. There is no recovery if you forget it.'
     ]),
-    passInput.wrap,
-    meter.wrap,
-    confirmInput.wrap,
-    mismatchEl,
-    errorEl,
-    createBtn,
+    createSection,
+    restoreSection,
     el('div', { class: 'screen-footer' }, [aboutToggle, aboutBody])
   ]);
 

@@ -131,6 +131,14 @@ export async function getEntry(db, id) {
   return db.get(STORE_ENTRIES, id);
 }
 
+export async function getLatestEntry(db) {
+  const tx = db.transaction(STORE_ENTRIES, 'readonly');
+  const cursor = await tx.store.openCursor(null, 'prev');
+  const value = cursor ? cursor.value : null;
+  await tx.done;
+  return value;
+}
+
 export async function getEntryByUuid(db, uuid) {
   return db.getFromIndex(STORE_ENTRIES, INDEX_UUID, uuid);
 }

@@ -10,6 +10,7 @@ import {
   unlockDatabase,
   putEntry,
   getEntry,
+  getLatestEntry,
   getEntryByUuid,
   listEntries,
   countEntries,
@@ -373,5 +374,25 @@ describe('wipe', () => {
     await wipeDatabase(db);
     db = await openDB(name);
     assert.equal(await isInitialized(db), false);
+  });
+});
+
+describe('getLatestEntry', () => {
+  test('returns null on empty entries store', async (t) => {
+    const { db } = await setup(t);
+    await initializeDatabase(db, PASSPHRASE);
+    assert.equal(await getLatestEntry(db), null);
+  });
+
+  test('returns entry with the highest id when populated', async (t) => {
+    const { db } = await setup(t);
+    await initializeDatabase(db, PASSPHRASE);
+    const id1 = await putEntry(db, makeEntry({ uuid: 'first' }));
+    const id2 = await putEntry(db, makeEntry({ uuid: 'second' }));
+    const id3 = await putEntry(db, makeEntry({ uuid: 'third' }));
+    assert.ok(id3 > id2 && id2 > id1);
+    const latest = await getLatestEntry(db);
+    assert.equal(latest.uuid, 'third');
+    assert.equal(latest.id, id3);
   });
 });

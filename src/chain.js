@@ -1,5 +1,5 @@
 import { decrypt } from './crypto.js';
-import { STORE_ENTRIES, getEntryByUuid } from './storage.js';
+import { STORE_ENTRIES, getEntryByUuid, getLatestEntry } from './storage.js';
 
 export const GENESIS_HASH = '0'.repeat(64);
 export const HASH_HEX_LENGTH = 64;
@@ -117,14 +117,6 @@ export async function computeHash(prevHash, entry) {
   buf.set(canonicalBytes, prevBytes.length);
   const digest = await subtle.digest('SHA-256', buf);
   return bytesToHex(new Uint8Array(digest));
-}
-
-async function getLatestEntry(db) {
-  const tx = db.transaction(STORE_ENTRIES, 'readonly');
-  const cursor = await tx.store.openCursor(null, 'prev');
-  const value = cursor ? cursor.value : null;
-  await tx.done;
-  return value;
 }
 
 export async function appendEntry(db, payload, options = {}) {

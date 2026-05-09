@@ -15,31 +15,15 @@
   <link rel="stylesheet" href="./styles/main.css">
 </head>
 <body>
-  <main>
-    <h1>Plivex</h1>
-    <p class="tagline">Personal note-taking, local only.</p>
-
-    <noscript>
-      <section>
-        <h2>JavaScript required</h2>
-        <p>Plivex needs JavaScript to function. Enable it and reload.</p>
-      </section>
-    </noscript>
-
-    <section id="install-prompt">
-      <h2>Install required</h2>
-      <p>This app must be installed to your home screen before use.</p>
-      <p><strong>iOS (Safari):</strong> Tap the Share button, then "Add to Home Screen."</p>
-      <p><strong>Android (Chrome):</strong> Tap the menu, then "Install app" or "Add to Home Screen."</p>
-      <p>Once installed, open Plivex from your home screen.</p>
+  <noscript>
+    <section class="screen">
+      <h2>JavaScript required</h2>
+      <p>Plivex needs JavaScript to function. Enable it and reload.</p>
     </section>
+  </noscript>
 
-    <section id="app" hidden>
-      <h2>Ready</h2>
-      <p>Phase 1 placeholder. The app shell is installed and the application code will land here in Phase 2.</p>
-    </section>
-  </main>
+  <main id="root"></main>
 
-  <script type="module" src="./src/app.js"></script>
+  <script type="module" src="./src/ui/ui.js"></script>
 </body>
 </html>

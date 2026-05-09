@@ -15,7 +15,11 @@ import {
   countEntries as storageCountEntries,
   rewrapMasterKey,
   wipeDatabase,
-  DB_NAME
+  getAllEntriesById,
+  getMetaRecord,
+  putMetaRecord,
+  DB_NAME,
+  DB_VERSION
 } from './storage.js';
 import { encrypt, decrypt, assessPassphrase } from './crypto.js';
 import { appendEntry, verifyChain } from './chain.js';
@@ -177,6 +181,143 @@ export async function getStatus() {
   return { status: _status };
 }
 
+export const APP_VERSION = '1.0.0';
+export const EXPORT_FORMAT = 'plivex-export';
+export const EXPORT_FORMAT_VERSION = 1;
+
+const subtle = globalThis.crypto.subtle;
+
+function bytesToBase64(bytes) {
+  let bin = '';
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin);
+}
+
+function base64ToBytes(s) {
+  const bin = atob(s);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
+// Canonical JSON for the export shape. Input is fully under our control
+// (strings, integers, nested objects, arrays). For the strict canonical-
+// JSON enforcement used in the chain hash, see src/chain.js.
+function canonicalSort(value) {
+  if (value === null || typeof value !== 'object') return value;
+  if (Array.isArray(value)) return value.map(canonicalSort);
+  const out = {};
+  for (const k of Object.keys(value).sort()) out[k] = canonicalSort(value[k]);
+  return out;
+}
+
+async function sha256Hex(text) {
+  const digest = await subtle.digest('SHA-256', new TextEncoder().encode(text));
+  const bytes = new Uint8Array(digest);
+  let hex = '';
+  for (let i = 0; i < bytes.length; i++) hex += bytes[i].toString(16).padStart(2, '0');
+  return hex;
+}
+
+function encodeEncryptedPayload(p) {
+  return { iv: bytesToBase64(p.iv), ciphertext: bytesToBase64(p.ciphertext) };
+}
+
+function decodeEncryptedPayload(p) {
+  return { iv: base64ToBytes(p.iv), ciphertext: base64ToBytes(p.ciphertext) };
+}
+
+export async function exportBackup() {
+  assertStatus(['locked', 'unlocked'], 'exportBackup');
+  const schemaRec = await getMetaRecord(_db, 'schema_version');
+  const saltRec = await getMetaRecord(_db, 'salt');
+  const wrappedRec = await getMetaRecord(_db, 'wrapped_master_key');
+  if (!schemaRec || !saltRec || !wrappedRec) {
+    throw new Error('exportBackup: database not initialized');
+  }
+  const records = await getAllEntriesById(_db);
+  const entries = records.map((r) => {
+    const out = {
+      id: r.id,
+      uuid: r.uuid,
+      created_at: r.created_at,
+      prev_hash: r.prev_hash,
+      entry_hash: r.entry_hash,
+      encrypted_payload: encodeEncryptedPayload(r.encrypted_payload)
+    };
+    if (r.supersedes !== undefined) out.supersedes = r.supersedes;
+    return out;
+  });
+
+  const body = {
+    format: EXPORT_FORMAT,
+    format_version: EXPORT_FORMAT_VERSION,
+    exported_at: new Date().toISOString(),
+    schema_version: schemaRec.value,
+    salt: bytesToBase64(saltRec.value),
+    wrapped_master_key: encodeEncryptedPayload(wrappedRec.value),
+    entries
+  };
+  const export_hash = await sha256Hex(JSON.stringify(canonicalSort(body)));
+  return { ...body, export_hash };
+}
+
+function validateImport(backup) {
+  if (!backup || typeof backup !== 'object') {
+    return 'malformed: not an object';
+  }
+  if (backup.format !== EXPORT_FORMAT) {
+    return `malformed: format must be '${EXPORT_FORMAT}'`;
+  }
+  if (backup.format_version !== EXPORT_FORMAT_VERSION) {
+    return `unsupported format_version ${backup.format_version}`;
+  }
+  if (typeof backup.salt !== 'string') return 'malformed: salt missing';
+  if (!backup.wrapped_master_key) return 'malformed: wrapped_master_key missing';
+  if (!Array.isArray(backup.entries)) return 'malformed: entries must be an array';
+  if (typeof backup.export_hash !== 'string') return 'malformed: export_hash missing';
+  return null;
+}
+
+export async function importBackup(backup) {
+  if (_status === 'unbooted') {
+    throw new Error("importBackup: status is 'unbooted'");
+  }
+  const malformedReason = validateImport(backup);
+  if (malformedReason) {
+    return { ok: false, reason: 'malformed', detail: malformedReason };
+  }
+  const { export_hash, ...body } = backup;
+  const recomputed = await sha256Hex(JSON.stringify(canonicalSort(body)));
+  if (recomputed !== export_hash) {
+    return { ok: false, reason: 'hash_mismatch' };
+  }
+
+  await wipeDatabase(_db);
+  _db = await openDB(_dbName);
+
+  await putMetaRecord(_db, 'schema_version', body.schema_version ?? DB_VERSION);
+  await putMetaRecord(_db, 'created_at', new Date().toISOString());
+  await putMetaRecord(_db, 'salt', base64ToBytes(body.salt));
+  await putMetaRecord(_db, 'wrapped_master_key', decodeEncryptedPayload(body.wrapped_master_key));
+
+  for (const e of body.entries) {
+    const record = {
+      uuid: e.uuid,
+      created_at: e.created_at,
+      prev_hash: e.prev_hash,
+      entry_hash: e.entry_hash,
+      encrypted_payload: decodeEncryptedPayload(e.encrypted_payload)
+    };
+    if (e.supersedes !== undefined) record.supersedes = e.supersedes;
+    await putEntry(_db, record);
+  }
+
+  _masterKey = null;
+  _status = 'locked';
+  return { ok: true, count: body.entries.length };
+}
+
 // Test-only: reset module-scoped state. Production callers should not use
 // this — module state is intended to live for the entire page load.
 export function _resetForTesting() {
@@ -189,28 +330,6 @@ export function _resetForTesting() {
   _status = 'unbooted';
 }
 
-// Browser-side bootstrap: PWA install gate + service worker registration.
-// Skipped automatically when window/document are absent (e.g., Node tests).
-function bootstrapBrowser() {
-  if (typeof window === 'undefined' || typeof document === 'undefined') return;
-
-  const isStandalone =
-    window.matchMedia('(display-mode: standalone)').matches ||
-    window.navigator.standalone === true;
-
-  if (isStandalone) {
-    document.getElementById('install-prompt')?.setAttribute('hidden', '');
-    document.getElementById('app')?.removeAttribute('hidden');
-  } else {
-    document.getElementById('app')?.setAttribute('hidden', '');
-    document.getElementById('install-prompt')?.removeAttribute('hidden');
-  }
-
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker
-      .register('./sw.js')
-      .catch((err) => console.error('Service worker registration failed:', err));
-  }
-}
-
-bootstrapBrowser();
+// Browser bootstrap (standalone detection, service worker registration, and
+// install-gate UI) lives in src/ui/ui.js. This module is pure orchestration
+// and has no DOM side effects on import.

@@ -399,6 +399,81 @@ describe('verifyIntegrity', () => {
 // getStatus
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Export / Import
+// ---------------------------------------------------------------------------
+
+describe('export / import', () => {
+  test('exportBackup returns a self-consistent object with required fields', async (t) => {
+    await freshAndUnlocked(t);
+    await app.createEntry({ msg: 'one' });
+    await app.createEntry({ msg: 'two' });
+    const backup = await app.exportBackup();
+    assert.equal(backup.format, 'plivex-export');
+    assert.equal(backup.format_version, 1);
+    assert.equal(typeof backup.salt, 'string');
+    assert.equal(typeof backup.wrapped_master_key.iv, 'string');
+    assert.equal(typeof backup.wrapped_master_key.ciphertext, 'string');
+    assert.equal(backup.entries.length, 2);
+    assert.match(backup.export_hash, /^[0-9a-f]{64}$/);
+  });
+
+  test('export → wipe → import round-trips entries and master key', async (t) => {
+    const dbName = await freshAndUnlocked(t);
+    await app.createEntry({ msg: 'first' });
+    await app.createEntry({ msg: 'second' });
+    const backup = await app.exportBackup();
+    await app.lock();
+    await app.wipe();
+    const importResult = await app.importBackup(backup);
+    assert.equal(importResult.ok, true);
+    assert.equal(importResult.count, 2);
+    assert.equal((await app.getStatus()).status, 'locked');
+    const unlockResult = await app.unlock(PASSPHRASE);
+    assert.equal(unlockResult.ok, true);
+    const list = await app.listEntries();
+    assert.equal(list.length, 2);
+    assert.deepEqual(list[0].payload, { msg: 'first' });
+    assert.deepEqual(list[1].payload, { msg: 'second' });
+  });
+
+  test('import rejects backup with tampered export_hash', async (t) => {
+    await freshAndUnlocked(t);
+    await app.createEntry({ msg: 'x' });
+    const backup = await app.exportBackup();
+    backup.export_hash = '0'.repeat(64);
+    await app.lock();
+    await app.wipe();
+    const result = await app.importBackup(backup);
+    assert.equal(result.ok, false);
+    assert.equal(result.reason, 'hash_mismatch');
+  });
+
+  test('import rejects backup with tampered entry payload', async (t) => {
+    await freshAndUnlocked(t);
+    await app.createEntry({ msg: 'x' });
+    const backup = await app.exportBackup();
+    // Flip a bit in the first entry's ciphertext base64; export_hash will mismatch.
+    const ct = backup.entries[0].encrypted_payload.ciphertext;
+    backup.entries[0].encrypted_payload.ciphertext =
+      ct.slice(0, -2) + (ct.endsWith('A=') ? 'B=' : 'A=');
+    await app.lock();
+    await app.wipe();
+    const result = await app.importBackup(backup);
+    assert.equal(result.ok, false);
+    assert.equal(result.reason, 'hash_mismatch');
+  });
+
+  test('import rejects malformed backup', async (t) => {
+    await freshAndUnlocked(t);
+    await app.lock();
+    await app.wipe();
+    const result = await app.importBackup({ not: 'a backup' });
+    assert.equal(result.ok, false);
+    assert.equal(result.reason, 'malformed');
+  });
+});
+
 describe('getStatus', () => {
   test('returns just status for unbooted', async () => {
     app._resetForTesting();

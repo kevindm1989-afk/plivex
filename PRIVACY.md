@@ -1,6 +1,6 @@
 # Privacy Policy
 
-**Last updated:** [today's date — fill in when you commit]
+**Last updated:** [2026-05-09 — fill in when you commit]
 
 ## Plain language summary
 

@@ -83,7 +83,9 @@ function changePassphraseSection(controller) {
   const btn = Button({ label: 'Change', onClick: submit, disabled: true });
 
   const updateButton = () => {
-    btn.disabled = busy || !cur || !next || next !== confirmNext || lastScore < 1;
+    // Strength gate: require score >= 2 ("fair"). Same bump as setup screen
+    // in v1.1.
+    btn.disabled = busy || !cur || !next || next !== confirmNext || lastScore < 2;
   };
 
   return section('Change passphrase', [

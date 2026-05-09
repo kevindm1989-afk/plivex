@@ -19,7 +19,9 @@ import {
   getMetaRecord,
   putMetaRecord,
   DB_NAME,
-  DB_VERSION
+  DB_VERSION,
+  STORE_META,
+  STORE_ENTRIES
 } from './storage.js';
 import { encrypt, decrypt, assessPassphrase } from './crypto.js';
 import { appendEntry, verifyChain } from './chain.js';
@@ -181,7 +183,7 @@ export async function getStatus() {
   return { status: _status };
 }
 
-export const APP_VERSION = '1.0.0';
+export const APP_VERSION = '1.1.0';
 export const EXPORT_FORMAT = 'plivex-export';
 export const EXPORT_FORMAT_VERSION = 1;
 
@@ -296,21 +298,38 @@ export async function importBackup(backup) {
   await wipeDatabase(_db);
   _db = await openDB(_dbName);
 
-  await putMetaRecord(_db, 'schema_version', body.schema_version ?? DB_VERSION);
-  await putMetaRecord(_db, 'created_at', new Date().toISOString());
-  await putMetaRecord(_db, 'salt', base64ToBytes(body.salt));
-  await putMetaRecord(_db, 'wrapped_master_key', decodeEncryptedPayload(body.wrapped_master_key));
-
-  for (const e of body.entries) {
-    const record = {
-      uuid: e.uuid,
-      created_at: e.created_at,
-      prev_hash: e.prev_hash,
-      entry_hash: e.entry_hash,
-      encrypted_payload: decodeEncryptedPayload(e.encrypted_payload)
-    };
-    if (e.supersedes !== undefined) record.supersedes = e.supersedes;
-    await putEntry(_db, record);
+  // Single transaction across both stores: every meta + entry write either
+  // commits together or all rolls back. If the transaction aborts (e.g. a
+  // duplicate uuid violates the by_uuid unique index), the database is
+  // left in the same empty state the wipe produced.
+  try {
+    const tx = _db.transaction([STORE_META, STORE_ENTRIES], 'readwrite');
+    // If a put rejects, we exit the try via that rejection; tx.done would
+    // also reject and become an unhandled rejection. Attach a no-op catch
+    // immediately so the secondary rejection is absorbed cleanly.
+    tx.done.catch(() => {});
+    const metaStore = tx.objectStore(STORE_META);
+    const entriesStore = tx.objectStore(STORE_ENTRIES);
+    await metaStore.put({ key: 'schema_version', value: body.schema_version ?? DB_VERSION });
+    await metaStore.put({ key: 'created_at', value: new Date().toISOString() });
+    await metaStore.put({ key: 'salt', value: base64ToBytes(body.salt) });
+    await metaStore.put({ key: 'wrapped_master_key', value: decodeEncryptedPayload(body.wrapped_master_key) });
+    for (const e of body.entries) {
+      const record = {
+        uuid: e.uuid,
+        created_at: e.created_at,
+        prev_hash: e.prev_hash,
+        entry_hash: e.entry_hash,
+        encrypted_payload: decodeEncryptedPayload(e.encrypted_payload)
+      };
+      if (e.supersedes !== undefined) record.supersedes = e.supersedes;
+      await entriesStore.put(record);
+    }
+    await tx.done;
+  } catch (err) {
+    _masterKey = null;
+    _status = 'uninitialized';
+    return { ok: false, reason: 'import_failed', detail: err.message };
   }
 
   _masterKey = null;

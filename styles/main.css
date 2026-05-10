@@ -282,11 +282,11 @@ code, .mono {
   transition: width 0.15s, background-color 0.15s;
   background: var(--border-strong);
 }
-.strength-fill.score-0 { background: var(--border-strong); }
-.strength-fill.score-1 { background: var(--danger); }
-.strength-fill.score-2 { background: #d4a04a; }
-.strength-fill.score-3 { background: #7bbf7b; }
-.strength-fill.score-4 { background: var(--success); }
+.strength-fill.score-0 { width: 0%;   background: var(--border-strong); }
+.strength-fill.score-1 { width: 25%;  background: var(--danger); }
+.strength-fill.score-2 { width: 50%;  background: #d4a04a; }
+.strength-fill.score-3 { width: 75%;  background: #7bbf7b; }
+.strength-fill.score-4 { width: 100%; background: var(--success); }
 .strength-text {
   font-size: 0.85rem;
   color: var(--muted);

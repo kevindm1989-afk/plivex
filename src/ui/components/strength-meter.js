@@ -13,9 +13,11 @@ export function StrengthMeter() {
 
   const update = (passphrase) => {
     const result = assessPassphrase(passphrase);
+    // Class drives both color AND width — see styles/main.css. We avoid
+    // setting `.style.width` directly so the page can ship a strict CSP
+    // without `'unsafe-inline'` for style-src.
     const fill = bar.firstElementChild;
     fill.className = `strength-fill score-${result.score}`;
-    fill.style.width = `${(result.score / 4) * 100}%`;
     if (!passphrase) {
       text.textContent = `Minimum ${MIN_PASSPHRASE_LENGTH} characters.`;
       feedback.innerHTML = '';

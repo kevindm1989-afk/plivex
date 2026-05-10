@@ -68,3 +68,17 @@ This is a personal project. The developer does not provide individual support. T
 ### Verification
 
 This entire app is open source. You can verify every claim in this policy by reading the source code at https://github.com/kevindm1989-afk/plivex.
+
+## Auto-lock
+
+Plivex automatically locks itself after a period of inactivity, requiring you to re-enter your passphrase before viewing or modifying entries. The default timeout is 15 minutes; you can change it to 1, 5, 15, 30, or 60 minutes in Settings.
+
+The auto-lock timer is based on wall-clock time. Backgrounding the app, locking your phone, or putting your device to sleep does not pause the timer — when you next interact with the app after the timeout has elapsed, you will be prompted to unlock again.
+
+Auto-lock only clears the master key from the app's working memory. It does not delete any data. After auto-locking, your entries remain encrypted on your device exactly as they were before.
+
+## Accessibility
+
+Plivex uses semantic HTML elements, ARIA roles where applicable, and visible focus indicators on all interactive elements. All buttons that display only an icon include a text label for assistive technology. Touch targets are at least 44 pixels in their smallest dimension. Dialogs trap keyboard focus while open.
+
+Plivex does not claim formal compliance with any accessibility standard such as WCAG, ADA, or AODA. The above describes properties of the code as written; if you encounter accessibility issues, please file an issue on the project's GitHub repository.

@@ -82,6 +82,12 @@ async function start() {
 
   registerServiceWorker();
 
+  // Activity listeners drive the auto-lock timer in app.js. Attached on
+  // document so any user input anywhere in the app counts as activity.
+  for (const ev of ['pointerdown', 'keydown', 'touchstart']) {
+    document.addEventListener(ev, () => app.recordActivity(), { passive: true });
+  }
+
   try {
     await app.bootstrap();
   } catch (err) {

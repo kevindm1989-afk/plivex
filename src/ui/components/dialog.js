@@ -4,6 +4,11 @@ import { Button } from './button.js';
 const FOCUSABLE_SELECTOR =
   'button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
+// Each dialog instance gets a unique title id so aria-labelledby resolves
+// correctly even if dialogs are ever stacked or rapidly re-opened.
+let _dialogIdCounter = 0;
+const nextDialogTitleId = () => `dialog-title-${++_dialogIdCounter}`;
+
 // Tab/Shift+Tab focus trap helper. When focus is at a boundary of the
 // dialog and Tab is pressed, wraps focus to the other end.
 export function handleTabTrap(event, dialogEl, doc = globalThis.document) {
@@ -60,8 +65,9 @@ export function confirmDialog({ title, message, confirmLabel = 'Confirm', cancel
       onClick: () => close(false)
     });
 
+    const titleId = nextDialogTitleId();
     const children = [
-      el('h2', { class: 'dialog-title', id: 'dialog-title' }, [title]),
+      el('h2', { class: 'dialog-title', id: titleId }, [title]),
       el('p', { class: 'dialog-message' }, [message])
     ];
 
@@ -89,7 +95,7 @@ export function confirmDialog({ title, message, confirmLabel = 'Confirm', cancel
         class: 'dialog',
         role: 'dialog',
         'aria-modal': 'true',
-        'aria-labelledby': 'dialog-title'
+        'aria-labelledby': titleId
       },
       children
     );
@@ -122,11 +128,12 @@ export function alertDialog({ title, message }) {
       handleTabTrap(e, dialog);
     };
     const okBtn = Button({ label: 'OK', onClick: close });
+    const titleId = nextDialogTitleId();
     const dialog = el(
       'div',
-      { class: 'dialog', role: 'dialog', 'aria-modal': 'true' },
+      { class: 'dialog', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': titleId },
       [
-        el('h2', { class: 'dialog-title' }, [title]),
+        el('h2', { class: 'dialog-title', id: titleId }, [title]),
         el('p', { class: 'dialog-message' }, [message]),
         el('div', { class: 'dialog-actions' }, [okBtn])
       ]

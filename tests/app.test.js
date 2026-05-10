@@ -541,6 +541,124 @@ describe('export / import', () => {
   });
 });
 
+// ---------------------------------------------------------------------------
+// Auto-lock
+//
+// Tests use the injectable clock seam (app._setClockForTesting) instead of
+// real setTimeout so they're fast and not wall-clock-flaky.
+// ---------------------------------------------------------------------------
+
+describe('auto-lock', () => {
+  test('default timeout is 15 minutes after fresh initialize', async (t) => {
+    await freshApp(t);
+    await app.initialize(PASSPHRASE);
+    assert.equal(app.getAutoLockMinutes(), 15);
+  });
+
+  test('setAutoLockMinutes(5) persists and is read back on next bootstrap', async (t) => {
+    app._resetForTesting();
+    const dbName = uniqueName();
+    t.after(async () => { app._resetForTesting(); try { await deleteDB(dbName); } catch {} });
+    await app.bootstrap({ dbName });
+    await app.initialize(PASSPHRASE);
+    await app.setAutoLockMinutes(5);
+    assert.equal(app.getAutoLockMinutes(), 5);
+    app._resetForTesting();
+    await app.bootstrap({ dbName });
+    assert.equal(app.getAutoLockMinutes(), 5);
+  });
+
+  test('setAutoLockMinutes with disallowed value throws', async (t) => {
+    await freshAndUnlocked(t);
+    await assert.rejects(() => app.setAutoLockMinutes(99), /not one of/);
+    await assert.rejects(() => app.setAutoLockMinutes(0), /not one of/);
+    await assert.rejects(() => app.setAutoLockMinutes(7), /not one of/);
+    // Value unchanged on rejection
+    assert.equal(app.getAutoLockMinutes(), 15);
+  });
+
+  test('after recordActivity with no time elapsed, no auto-lock fires', async (t) => {
+    await freshAndUnlocked(t);
+    let now = 1_700_000_000_000;
+    const restore = app._setClockForTesting(() => now);
+    t.after(restore);
+    app.recordActivity();
+    // 0ms later, op succeeds
+    const r = await app.createEntry({ msg: 'still active' });
+    assert.equal(r.ok, true);
+    assert.equal((await app.getStatus()).status, 'unlocked');
+  });
+
+  test('after recordActivity and timeout+1ms elapsed, next op auto-locks and throws', async (t) => {
+    await freshAndUnlocked(t);
+    await app.setAutoLockMinutes(1);
+    let now = 1_700_000_000_000;
+    const restore = app._setClockForTesting(() => now);
+    t.after(restore);
+    app.recordActivity();
+    now += 60_000 + 1; // 1 minute + 1 ms
+    await assert.rejects(() => app.createEntry({ msg: 'too late' }), /createEntry/);
+    assert.equal((await app.getStatus()).status, 'locked');
+  });
+
+  test('auto-lock fires before the operation runs (no entry persisted)', async (t) => {
+    await freshAndUnlocked(t);
+    await app.setAutoLockMinutes(1);
+    let now = 1_700_000_000_000;
+    const restore = app._setClockForTesting(() => now);
+    t.after(restore);
+    app.recordActivity();
+    now += 60_000 + 1;
+    try { await app.createEntry({ msg: 'never persisted' }); } catch {}
+    // Re-unlock and confirm zero entries.
+    const unlock = await app.unlock(PASSPHRASE);
+    assert.equal(unlock.ok, true);
+    assert.equal(await app.countEntries(), 0);
+  });
+
+  test('countEntries does not auto-lock (locked-allowed op)', async (t) => {
+    await freshAndUnlocked(t);
+    await app.setAutoLockMinutes(1);
+    let now = 1_700_000_000_000;
+    const restore = app._setClockForTesting(() => now);
+    t.after(restore);
+    app.recordActivity();
+    now += 60_000 + 1;
+    // countEntries must succeed even after the timeout — it's allowed in
+    // locked state and should not trigger the auto-lock check.
+    assert.equal(await app.countEntries(), 0);
+    // Status should still be 'unlocked' since countEntries didn't trip the
+    // auto-lock gate.
+    assert.equal((await app.getStatus()).status, 'unlocked');
+  });
+
+  test('after auto-lock, master key is null (createEntry throws as locked)', async (t) => {
+    await freshAndUnlocked(t);
+    await app.setAutoLockMinutes(1);
+    let now = 1_700_000_000_000;
+    const restore = app._setClockForTesting(() => now);
+    t.after(restore);
+    app.recordActivity();
+    now += 60_000 + 1;
+    try { await app.getEntry(1); } catch {}
+    // Without re-unlocking, createEntry must reject with the locked error.
+    await assert.rejects(() => app.createEntry({ msg: 'x' }), /createEntry: status is 'locked'/);
+  });
+
+  test('clock moving backward does not auto-lock (negative delta tolerated)', async (t) => {
+    await freshAndUnlocked(t);
+    await app.setAutoLockMinutes(1);
+    let now = 1_700_000_000_000;
+    const restore = app._setClockForTesting(() => now);
+    t.after(restore);
+    app.recordActivity();
+    now -= 1_000_000; // simulate user setting clock backward
+    const r = await app.createEntry({ msg: 'still ok' });
+    assert.equal(r.ok, true);
+    assert.equal((await app.getStatus()).status, 'unlocked');
+  });
+});
+
 describe('getStatus', () => {
   test('returns just status for unbooted', async () => {
     app._resetForTesting();

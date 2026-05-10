@@ -12,6 +12,10 @@ This is a free, personal note-taking app provided as-is by an individual develop
 
 Plivex is a personal note-taking application provided free of charge by an individual developer in their personal capacity. It is not a commercial product, not a professional service, and not affiliated with any organization, employer, or union.
 
+### Auto-lock
+
+The app locks itself automatically after a period of inactivity (default 15 minutes, user-configurable in Settings). After auto-lock, the master key is no longer in memory; you must re-enter your passphrase to access your entries again.
+
 ### 2. Not professional advice
 
 Plivex is not legal advice, medical advice, financial advice, or advice of any other professional nature. It is a tool for personal documentation only. If you need professional advice about any matter you choose to document with this app, consult a qualified professional.

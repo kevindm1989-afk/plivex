@@ -30,6 +30,15 @@ let _db = null;
 let _dbName = null;
 let _masterKey = null;
 let _status = 'unbooted';
+let _lastActiveAt = 0;
+let _autoLockTimeoutMs = 15 * 60 * 1000;
+
+// Injectable wall-clock for tests. Production calls go through Date.now;
+// tests can swap this to fast-forward time without real waits.
+let _now = () => Date.now();
+
+export const ALLOWED_AUTO_LOCK_MINUTES = [1, 5, 15, 30, 60];
+export const DEFAULT_AUTO_LOCK_MINUTES = 15;
 
 function assertStatus(allowed, op) {
   const ok = Array.isArray(allowed) ? allowed.includes(_status) : _status === allowed;
@@ -38,14 +47,45 @@ function assertStatus(allowed, op) {
   }
 }
 
+// Wall-clock based: a backgrounded tab or sleeping device does not pause the
+// timer. If the system clock moves backward (user manually adjusts it), the
+// resulting negative delta is treated as "not yet expired" — better to leave
+// the user unlocked than to silently lock them based on an inverted clock.
+function checkAutoLock() {
+  if (_status !== 'unlocked') return false;
+  const elapsed = _now() - _lastActiveAt;
+  if (elapsed < 0) return false;
+  if (elapsed > _autoLockTimeoutMs) {
+    _masterKey = null;
+    _status = 'locked';
+    return true;
+  }
+  return false;
+}
+
+function assertUnlockedAndActive(op) {
+  assertStatus('unlocked', op);
+  if (checkAutoLock()) {
+    throw new Error(`${op}: status is 'locked'`);
+  }
+}
+
+export function recordActivity() {
+  _lastActiveAt = _now();
+}
+
 export async function bootstrap(options = {}) {
   assertStatus('unbooted', 'bootstrap');
   _dbName = options.dbName ?? DB_NAME;
   _db = await openDB(_dbName);
   if (await isInitialized(_db)) {
+    const stored = await getMetaRecord(_db, 'auto_lock_minutes');
+    const minutes = stored?.value ?? DEFAULT_AUTO_LOCK_MINUTES;
+    _autoLockTimeoutMs = minutes * 60 * 1000;
     _status = 'locked';
     return { status: _status, entryCount: await storageCountEntries(_db) };
   }
+  _autoLockTimeoutMs = DEFAULT_AUTO_LOCK_MINUTES * 60 * 1000;
   _status = 'uninitialized';
   return { status: _status };
 }
@@ -57,7 +97,10 @@ export async function initialize(passphrase) {
     return { ok: false, feedback: assessment.feedback };
   }
   _masterKey = await initializeDatabase(_db, passphrase);
+  await putMetaRecord(_db, 'auto_lock_minutes', DEFAULT_AUTO_LOCK_MINUTES);
+  _autoLockTimeoutMs = DEFAULT_AUTO_LOCK_MINUTES * 60 * 1000;
   _status = 'unlocked';
+  recordActivity();
   return { ok: true };
 }
 
@@ -76,6 +119,7 @@ export async function unlock(passphrase) {
   }
   _masterKey = key;
   _status = 'unlocked';
+  recordActivity();
   return { ok: true };
 }
 
@@ -98,7 +142,7 @@ export async function wipe() {
 }
 
 export async function changePassphrase(oldPassphrase, newPassphrase) {
-  assertStatus('unlocked', 'changePassphrase');
+  assertUnlockedAndActive('changePassphrase');
   const assessment = assessPassphrase(newPassphrase);
   if (assessment.score === 0) {
     return { ok: false, feedback: assessment.feedback };
@@ -115,7 +159,7 @@ export async function changePassphrase(oldPassphrase, newPassphrase) {
 }
 
 export async function createEntry(payload, options = {}) {
-  assertStatus('unlocked', 'createEntry');
+  assertUnlockedAndActive('createEntry');
   const entry = await appendEntry(_db, payload, options);
   const encrypted_payload = await encrypt(_masterKey, JSON.stringify(payload));
   const record = {
@@ -147,19 +191,19 @@ async function decryptRecord(record) {
 }
 
 export async function getEntry(id) {
-  assertStatus('unlocked', 'getEntry');
+  assertUnlockedAndActive('getEntry');
   const record = await storageGetEntry(_db, id);
   return record ? decryptRecord(record) : null;
 }
 
 export async function getEntryByUuid(uuid) {
-  assertStatus('unlocked', 'getEntryByUuid');
+  assertUnlockedAndActive('getEntryByUuid');
   const record = await storageGetEntryByUuid(_db, uuid);
   return record ? decryptRecord(record) : null;
 }
 
 export async function listEntries(options = {}) {
-  assertStatus('unlocked', 'listEntries');
+  assertUnlockedAndActive('listEntries');
   const records = await storageListEntries(_db, options);
   const result = [];
   for (const r of records) result.push(await decryptRecord(r));
@@ -172,8 +216,24 @@ export async function countEntries() {
 }
 
 export async function verifyIntegrity() {
-  assertStatus('unlocked', 'verifyIntegrity');
+  assertUnlockedAndActive('verifyIntegrity');
   return verifyChain(_db, _masterKey);
+}
+
+export function getAutoLockMinutes() {
+  return _autoLockTimeoutMs / 60 / 1000;
+}
+
+export async function setAutoLockMinutes(minutes) {
+  assertUnlockedAndActive('setAutoLockMinutes');
+  if (!ALLOWED_AUTO_LOCK_MINUTES.includes(minutes)) {
+    throw new Error(
+      `setAutoLockMinutes: ${minutes} is not one of ${ALLOWED_AUTO_LOCK_MINUTES.join(', ')}`
+    );
+  }
+  await putMetaRecord(_db, 'auto_lock_minutes', minutes);
+  _autoLockTimeoutMs = minutes * 60 * 1000;
+  return { ok: true };
 }
 
 export async function getStatus() {
@@ -183,7 +243,7 @@ export async function getStatus() {
   return { status: _status };
 }
 
-export const APP_VERSION = '1.1.0';
+export const APP_VERSION = '1.2.0';
 export const EXPORT_FORMAT = 'plivex-export';
 export const EXPORT_FORMAT_VERSION = 1;
 
@@ -230,7 +290,11 @@ function decodeEncryptedPayload(p) {
 }
 
 export async function exportBackup() {
+  // Allowed in locked OR unlocked: export only reads encrypted records.
   assertStatus(['locked', 'unlocked'], 'exportBackup');
+  if (_status === 'unlocked' && checkAutoLock()) {
+    throw new Error("exportBackup: status is 'locked'");
+  }
   const schemaRec = await getMetaRecord(_db, 'schema_version');
   const saltRec = await getMetaRecord(_db, 'salt');
   const wrappedRec = await getMetaRecord(_db, 'wrapped_master_key');
@@ -337,6 +401,13 @@ export async function importBackup(backup) {
   return { ok: true, count: body.entries.length };
 }
 
+// Test-only: swap in a fake clock. Returns a restore function.
+export function _setClockForTesting(fn) {
+  const previous = _now;
+  _now = fn ?? (() => Date.now());
+  return () => { _now = previous; };
+}
+
 // Test-only: reset module-scoped state. Production callers should not use
 // this — module state is intended to live for the entire page load.
 export function _resetForTesting() {
@@ -347,6 +418,9 @@ export function _resetForTesting() {
   _dbName = null;
   _masterKey = null;
   _status = 'unbooted';
+  _lastActiveAt = 0;
+  _autoLockTimeoutMs = DEFAULT_AUTO_LOCK_MINUTES * 60 * 1000;
+  _now = () => Date.now();
 }
 
 // Browser bootstrap (standalone detection, service worker registration, and

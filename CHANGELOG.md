@@ -4,7 +4,8 @@ All notable changes to Plivex are recorded here. Versions follow semantic versio
 
 ## [Unreleased]
 
-- Documentation hardening: CSP meta tag in `index.html`, `SECURITY.md`, `CHANGELOG.md`, `CONTRIBUTING.md`. Last-updated dates filled in across `PRIVACY.md`, `TERMS.md`, and `docs/EVIDENTIARY_USE.md`. `--border` and `--border-strong` already pass WCAG 1.4.11 (set in v1.2.0).
+- Liability hardening: `docs/THREAT_MODEL.md` (explicit in-scope/out-of-scope for security claims), `CODE_OF_CONDUCT.md` (no-community stance), `robots.txt` + `<meta name="robots" content="noindex, nofollow">` in `index.html` to discourage search-engine indexing. `TERMS.md` adds §13 Indemnification, §14 Force majeure; §12 gains a forum-non-conveniens waiver; previous §13/§14 renumbered to §15/§16. `SECURITY.md` drops the "(if present)" hedge on the threat-model reference.
+- Earlier in unreleased: CSP meta tag in `index.html`, `SECURITY.md`, `CHANGELOG.md`, `CONTRIBUTING.md`. Last-updated dates filled in across `PRIVACY.md`, `TERMS.md`, and `docs/EVIDENTIARY_USE.md`.
 
 ## [1.2.0] — 2026-05-09
 

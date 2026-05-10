@@ -80,12 +80,25 @@ These terms may be updated. Changes will appear in the repository's git history.
 
 ### 12. Governing law
 
-These terms are governed by the laws of the Province of Ontario, Canada, without regard to conflict of law principles. Any dispute arising from these terms or the use of the app shall be brought in the courts of Ontario.
+These terms are governed by the laws of the Province of Ontario, Canada, without regard to conflict of law principles. Any dispute arising from these terms or the use of the app shall be brought in the courts of Ontario. You waive any objection to venue, and any argument that those courts are an inconvenient forum.
 
-### 13. Severability
+### 13. Indemnification
+
+To the maximum extent permitted by law, you agree to indemnify, defend, and hold harmless the developer from and against any claim, demand, loss, liability, or expense — including reasonable legal fees — arising out of or related to:
+
+- Your use of the app;
+- Content you create, store, or process with the app;
+- Your violation of these terms;
+- Your infringement of any third party's intellectual property, privacy, or other rights.
+
+### 14. Force majeure
+
+The developer is not responsible for any failure of the app to function, install, update, or remain available, where the cause is outside the developer's control. This includes but is not limited to: outages of GitHub Pages or other hosting infrastructure, browser bugs or browser-vendor policy changes, network outages, hardware failures on your device, government actions, and natural events.
+
+### 15. Severability
 
 If any provision of these terms is found unenforceable, the remaining provisions remain in effect.
 
-### 14. Entire agreement
+### 16. Entire agreement
 
 These terms, together with the LICENSE and the Privacy Policy, constitute the entire agreement between you and the developer concerning the use of this app.

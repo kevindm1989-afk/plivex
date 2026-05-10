@@ -25,7 +25,7 @@ Do not open a public issue or pull request for security-affecting bugs. Public d
 - Forgotten passphrases — by design, there is no recovery
 - The threat model excludes hardware-level attacks (cold-boot, side channels) and post-compromise scenarios where an attacker already controls the user's device
 
-See the privacy policy for the security model the app does claim, and `docs/THREAT_MODEL.md` (if present) for the explicit threat model document.
+See the privacy policy for the security model the app does claim, and `docs/THREAT_MODEL.md` for the explicit threat model document.
 
 ## Response expectations
 

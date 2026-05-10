@@ -1,6 +1,6 @@
 # Privacy Policy
 
-**Last updated:** [2026-05-09 — fill in when you commit]
+**Last updated:** 2026-05-10 (v1.2.0)
 
 ## Plain language summary
 

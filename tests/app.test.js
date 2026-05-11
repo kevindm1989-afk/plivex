@@ -437,6 +437,24 @@ describe('photo attachments', () => {
     const got = await app.getEntry(id);
     assert.deepEqual(got.payload, payload);
   });
+
+  test('createEntry round-trips audio field unchanged', async (t) => {
+    await freshAndUnlocked(t);
+    const payload = {
+      title: 'meeting',
+      content: 'recorded conversation',
+      audio: [
+        {
+          name: 'clip.webm',
+          type: 'audio/webm',
+          dataB64: 'GkXfo59ChoEBQveBAUL3gQFC8oEEQvOBCEKChHdlYm1Ch4ECQoWBAhhTgGcBAAA='
+        }
+      ]
+    };
+    const { id } = await app.createEntry(payload);
+    const got = await app.getEntry(id);
+    assert.deepEqual(got.payload, payload);
+  });
 });
 
 // ---------------------------------------------------------------------------

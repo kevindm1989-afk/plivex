@@ -2,6 +2,24 @@
 
 All notable changes to Plivex are recorded here. Versions follow semantic versioning. Each release is also tagged in git.
 
+## [1.9.0] — 2026-05-11
+
+### Added
+- **Audio attachments on entries.** Up to 3 clips per entry, 25 MB each. Two paths: record directly via `MediaRecorder` (with mic permission prompt) or attach an existing audio file. Stored base64 inside the encrypted payload — same model as photos, covered by the hash chain, included in backup exports.
+- **In-form recorder UI.** Record / Stop buttons with a live elapsed-time readout and pulsing red indicator while capturing. Capability-gated: on browsers without `MediaRecorder`/`getUserMedia`, the recorder is replaced with a "use file upload instead" message.
+- **Audio playback in entry detail.** Each clip rendered with native `<audio controls>`.
+- **Audio count tag** on entry list rows (e.g., "2 audio").
+
+### Changed
+- `APP_VERSION` `1.8.0` → `1.9.0`. `CACHE_VERSION` `plivex-v12` → `plivex-v13`. New `./src/ui/components/audio-recorder.js` added to `APP_SHELL`.
+- CSP extended with `media-src 'self' data: blob:` so data-URL audio playback is allowed.
+
+### Privacy
+- `PRIVACY.md`: new "Audio attachments" section. Includes a note that the legality of recording a given conversation depends on jurisdiction.
+
+### Tests
+- 1 new test: round-trip an entry with an audio field through encrypt/decrypt. 181 total passing.
+
 ## [1.8.0] — 2026-05-11
 
 ### Added

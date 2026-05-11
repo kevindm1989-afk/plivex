@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'plivex-v12';
+const CACHE_VERSION = 'plivex-v13';
 
 const APP_SHELL = [
   './',
@@ -16,6 +16,7 @@ const APP_SHELL = [
   './src/ui/components/input.js',
   './src/ui/components/dialog.js',
   './src/ui/components/strength-meter.js',
+  './src/ui/components/audio-recorder.js',
   './src/ui/screens/install-gate.js',
   './src/ui/screens/setup.js',
   './src/ui/screens/lock.js',

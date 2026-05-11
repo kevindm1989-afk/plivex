@@ -2,6 +2,7 @@ import { el, clear, svgFromString } from '../dom.js';
 import { Input, Textarea } from '../components/input.js';
 import { Button } from '../components/button.js';
 import { confirmDialog } from '../components/dialog.js';
+import { AudioRecorder } from '../components/audio-recorder.js';
 import { iconBack, iconCheck } from '../icons.js';
 import * as app from '../../app.js';
 
@@ -20,9 +21,15 @@ export const ENTRY_TYPES = [
 
 export const MAX_PHOTOS_PER_ENTRY = 5;
 export const MAX_PHOTO_BYTES = 10 * 1024 * 1024;
+export const MAX_AUDIO_PER_ENTRY = 3;
+export const MAX_AUDIO_BYTES = 25 * 1024 * 1024;
 
 function photoDataUrl(photo) {
   return `data:${photo.type || 'image/jpeg'};base64,${photo.dataB64}`;
+}
+
+function audioDataUrl(audio) {
+  return `data:${audio.type || 'audio/webm'};base64,${audio.dataB64}`;
 }
 
 function fileToBase64(file) {
@@ -35,6 +42,19 @@ function fileToBase64(file) {
     };
     reader.onerror = () => reject(reader.error || new Error('read failed'));
     reader.readAsDataURL(file);
+  });
+}
+
+function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = String(reader.result || '');
+      const comma = dataUrl.indexOf(',');
+      resolve(comma === -1 ? '' : dataUrl.slice(comma + 1));
+    };
+    reader.onerror = () => reject(reader.error || new Error('read failed'));
+    reader.readAsDataURL(blob);
   });
 }
 
@@ -54,6 +74,9 @@ export async function render(root, controller, params = {}) {
   let location = original?.payload?.location ?? '';
   let photos = Array.isArray(original?.payload?.photos)
     ? original.payload.photos.slice()
+    : [];
+  let audios = Array.isArray(original?.payload?.audio)
+    ? original.payload.audio.slice()
     : [];
   let dirty = false;
   let busy = false;
@@ -209,6 +232,111 @@ export async function render(root, controller, params = {}) {
     photoStatus
   ]);
 
+  // Audio attachments: same encrypted-payload model as photos. Limited to
+  // MAX_AUDIO_PER_ENTRY clips per entry and MAX_AUDIO_BYTES per clip.
+  const audioStatus = el('p', { class: 'photo-status', role: 'status' });
+  const audioList = el('div', { class: 'audio-list' });
+
+  function renderAudios() {
+    clear(audioList);
+    audios.forEach((a, idx) => {
+      audioList.appendChild(
+        el('div', { class: 'audio-row' }, [
+          el('audio', {
+            controls: true,
+            src: audioDataUrl(a),
+            attrs: { preload: 'metadata' }
+          }),
+          el('span', { class: 'audio-name' }, [a.name || `clip ${idx + 1}`]),
+          el('button', {
+            type: 'button',
+            class: 'audio-remove',
+            attrs: { 'aria-label': `Remove ${a.name || 'audio clip'}` },
+            onClick: () => {
+              audios.splice(idx, 1);
+              dirty = true;
+              renderAudios();
+              audioRecorder.refresh();
+              updateSave();
+            }
+          }, ['Remove'])
+        ])
+      );
+    });
+  }
+
+  async function addAudio({ blob, name, type }) {
+    if (audios.length >= MAX_AUDIO_PER_ENTRY) {
+      audioStatus.className = 'photo-status photo-status-warn';
+      audioStatus.textContent = `Max ${MAX_AUDIO_PER_ENTRY} audio clips per entry.`;
+      return;
+    }
+    if (blob.size > MAX_AUDIO_BYTES) {
+      const sizeMb = (blob.size / 1024 / 1024).toFixed(1);
+      const capMb = MAX_AUDIO_BYTES / 1024 / 1024;
+      audioStatus.className = 'photo-status photo-status-warn';
+      audioStatus.textContent = `${name}: ${sizeMb} MB exceeds ${capMb} MB cap.`;
+      return;
+    }
+    try {
+      const dataB64 = await blobToBase64(blob);
+      audios.push({ name, type: type || blob.type || 'audio/webm', dataB64 });
+      dirty = true;
+      audioStatus.className = 'photo-status';
+      audioStatus.textContent = '';
+      renderAudios();
+      audioRecorder.refresh();
+      updateSave();
+    } catch (err) {
+      audioStatus.className = 'photo-status photo-status-warn';
+      audioStatus.textContent = `Could not read clip: ${err.message}`;
+    }
+  }
+
+  const audioRecorder = AudioRecorder({
+    disabled: () => audios.length >= MAX_AUDIO_PER_ENTRY,
+    onClipReady: ({ blob, mimeType }) => {
+      const ext = (mimeType && mimeType.includes('mp4')) ? 'm4a' : 'webm';
+      const name = `recording-${new Date().toISOString().replace(/[:.]/g, '-')}.${ext}`;
+      addAudio({ blob, name, type: mimeType });
+    },
+    onError: (msg) => {
+      audioStatus.className = 'photo-status photo-status-warn';
+      audioStatus.textContent = msg;
+    }
+  });
+
+  const audioFileInput = el('input', {
+    type: 'file',
+    accept: 'audio/*',
+    multiple: true,
+    hidden: true,
+    onChange: async (e) => {
+      const files = Array.from(e.target.files ?? []);
+      e.target.value = '';
+      for (const f of files) {
+        if (audios.length >= MAX_AUDIO_PER_ENTRY) break;
+        await addAudio({ blob: f, name: f.name, type: f.type });
+      }
+    }
+  });
+  const addAudioFileBtn = Button({
+    label: 'Add audio file',
+    variant: 'secondary',
+    onClick: () => audioFileInput.click()
+  });
+
+  const audioField = el('div', { class: 'field audio-field' }, [
+    el('span', { class: 'field-label' }, [
+      `Audio (optional, up to ${MAX_AUDIO_PER_ENTRY})`
+    ]),
+    audioList,
+    audioRecorder,
+    el('div', { class: 'btn-row' }, [addAudioFileBtn, audioFileInput]),
+    audioStatus
+  ]);
+  renderAudios();
+
   const goBack = async () => {
     if (dirty) {
       const ok = await confirmDialog({
@@ -238,6 +366,7 @@ export async function render(root, controller, params = {}) {
       if (witness) payload.witness = witness;
       if (location) payload.location = location;
       if (photos.length > 0) payload.photos = photos;
+      if (audios.length > 0) payload.audio = audios;
       const options = mode === 'edit' && original ? { supersedes: original.uuid } : undefined;
       await app.createEntry(payload, options);
       dirty = false;
@@ -283,6 +412,7 @@ export async function render(root, controller, params = {}) {
     witnessField.wrap,
     locationField.wrap,
     photoField,
+    audioField,
     errorEl
   ]);
 

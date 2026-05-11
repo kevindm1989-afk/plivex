@@ -46,8 +46,9 @@ export function render(root, controller) {
       ]),
 
       section('What an entry can hold', [
-        'Each entry has a title and content. You can also add: a type (Schedule, Pay, Safety, Discipline, Harassment, Meeting, Conversation, Injury, Other), a witness name, a location, a "follow up by" date, up to 5 photos (10 MB each), and up to 3 audio clips (25 MB each).',
+        'Each entry has a title and content. You can also add: a type (Schedule, Pay, Safety, Discipline, Harassment, Meeting, Conversation, Injury, Other), a witness name, a location, a "follow up by" date, up to 5 photos (10 MB each), up to 3 audio clips (25 MB each), and up to 3 file attachments (15 MB each — PDFs, documents, anything).',
         'Audio can be recorded directly in the app, or attached from an existing file. Photo bytes are kept as-is — Plivex does not strip EXIF. If a photo carries a capture time or GPS, that metadata is preserved inside the encrypted payload.',
+        'File attachments are stored encrypted alongside the entry, just like photos and audio. They are downloaded back out via your browser when you tap Download on the entry detail. The chain hash covers them; backups include them.',
         'Recording requires microphone permission from your browser the first time. Whether or not recording a particular conversation is legal depends on where you are and who is speaking — check your jurisdiction\'s rules before relying on it.'
       ]),
 

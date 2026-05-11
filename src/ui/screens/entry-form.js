@@ -24,6 +24,8 @@ export const MAX_PHOTOS_PER_ENTRY = 5;
 export const MAX_PHOTO_BYTES = 10 * 1024 * 1024;
 export const MAX_AUDIO_PER_ENTRY = 3;
 export const MAX_AUDIO_BYTES = 25 * 1024 * 1024;
+export const MAX_FILES_PER_ENTRY = 3;
+export const MAX_FILE_BYTES = 15 * 1024 * 1024;
 
 function photoDataUrl(photo) {
   return `data:${photo.type || 'image/jpeg'};base64,${photo.dataB64}`;
@@ -83,6 +85,9 @@ export async function render(root, controller, params = {}) {
     : [];
   let audios = Array.isArray(original?.payload?.audio)
     ? original.payload.audio.slice()
+    : [];
+  let files = Array.isArray(original?.payload?.files)
+    ? original.payload.files.slice()
     : [];
   let dirty = false;
   let busy = false;
@@ -360,6 +365,93 @@ export async function render(root, controller, params = {}) {
   ]);
   renderAudios();
 
+  // File attachments (PDF / docs / anything). Stored base64 inside the
+  // encrypted payload like photos and audio. Caps: 3 files × 15 MB.
+  const filesStatus = el('p', { class: 'photo-status', role: 'status' });
+  const filesList = el('div', { class: 'files-list' });
+
+  function renderFiles() {
+    clear(filesList);
+    files.forEach((f, idx) => {
+      const sizeMb = ((f.dataB64.length * 0.75) / 1024 / 1024).toFixed(2);
+      filesList.appendChild(
+        el('div', { class: 'file-row' }, [
+          el('span', { class: 'file-name' }, [f.name || `file ${idx + 1}`]),
+          el('span', { class: 'file-meta' }, [`${f.type || 'unknown'} · ${sizeMb} MB`]),
+          el('button', {
+            type: 'button',
+            class: 'audio-remove',
+            attrs: { 'aria-label': `Remove ${f.name || 'file'}` },
+            onClick: () => {
+              files.splice(idx, 1);
+              dirty = true;
+              renderFiles();
+              updateSave();
+            }
+          }, ['Remove'])
+        ])
+      );
+    });
+  }
+
+  const filesInput = el('input', {
+    type: 'file',
+    multiple: true,
+    hidden: true,
+    onChange: async (e) => {
+      const incoming = Array.from(e.target.files ?? []);
+      e.target.value = '';
+      const skipped = [];
+      for (const f of incoming) {
+        if (files.length >= MAX_FILES_PER_ENTRY) {
+          skipped.push(`${f.name}: max ${MAX_FILES_PER_ENTRY} files per entry`);
+          continue;
+        }
+        if (f.size > MAX_FILE_BYTES) {
+          const sizeMb = (f.size / 1024 / 1024).toFixed(1);
+          const capMb = MAX_FILE_BYTES / 1024 / 1024;
+          skipped.push(`${f.name}: ${sizeMb} MB exceeds ${capMb} MB cap`);
+          continue;
+        }
+        try {
+          const dataB64 = await fileToBase64(f);
+          files.push({
+            name: f.name,
+            type: f.type || 'application/octet-stream',
+            dataB64
+          });
+          dirty = true;
+        } catch (err) {
+          skipped.push(`${f.name}: ${err.message}`);
+        }
+      }
+      renderFiles();
+      if (skipped.length > 0) {
+        filesStatus.className = 'photo-status photo-status-warn';
+        filesStatus.textContent = `Skipped: ${skipped.join('; ')}`;
+      } else {
+        filesStatus.className = 'photo-status';
+        filesStatus.textContent = '';
+      }
+      updateSave();
+    }
+  });
+  const addFileBtn = Button({
+    label: 'Add file',
+    variant: 'secondary',
+    onClick: () => filesInput.click()
+  });
+
+  const filesField = el('div', { class: 'field files-field' }, [
+    el('span', { class: 'field-label' }, [
+      `Files (optional, up to ${MAX_FILES_PER_ENTRY})`
+    ]),
+    filesList,
+    el('div', { class: 'btn-row' }, [addFileBtn, filesInput]),
+    filesStatus
+  ]);
+  renderFiles();
+
   const goBack = async () => {
     if (dirty) {
       const ok = await confirmDialog({
@@ -391,6 +483,7 @@ export async function render(root, controller, params = {}) {
       if (followUpDate) payload.followUpDate = followUpDate;
       if (photos.length > 0) payload.photos = photos;
       if (audios.length > 0) payload.audio = audios;
+      if (files.length > 0) payload.files = files;
       const options = mode === 'edit' && original ? { supersedes: original.uuid } : undefined;
       await app.createEntry(payload, options);
       dirty = false;
@@ -438,6 +531,7 @@ export async function render(root, controller, params = {}) {
     followUpField,
     photoField,
     audioField,
+    filesField,
     errorEl
   ]);
 

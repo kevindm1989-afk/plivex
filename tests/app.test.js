@@ -450,6 +450,24 @@ describe('photo attachments', () => {
     assert.deepEqual(got.payload, payload);
   });
 
+  test('createEntry round-trips files field unchanged', async (t) => {
+    await freshAndUnlocked(t);
+    const payload = {
+      title: 'pay stub',
+      content: 'attached',
+      files: [
+        {
+          name: 'stub-2026-05.pdf',
+          type: 'application/pdf',
+          dataB64: 'JVBERi0xLjQKJeLjz9MK'
+        }
+      ]
+    };
+    const { id } = await app.createEntry(payload);
+    const got = await app.getEntry(id);
+    assert.deepEqual(got.payload, payload);
+  });
+
   test('createEntry round-trips audio field unchanged', async (t) => {
     await freshAndUnlocked(t);
     const payload = {

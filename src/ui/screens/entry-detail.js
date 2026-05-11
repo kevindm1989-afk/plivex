@@ -11,6 +11,26 @@ function audioDataUrl(audio) {
   return `data:${audio.type || 'audio/webm'};base64,${audio.dataB64}`;
 }
 
+function base64ToBytes(s) {
+  const bin = atob(s);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
+function downloadFile(file) {
+  const bytes = base64ToBytes(file.dataB64);
+  const blob = new Blob([bytes], { type: file.type || 'application/octet-stream' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = file.name || 'attachment';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
 function openPhotoOverlay(photo) {
   const overlay = el(
     'div',
@@ -217,6 +237,24 @@ export async function render(root, controller, params = {}) {
                   el('span', { class: 'audio-name' }, [a.name || `clip ${i + 1}`])
                 ])
               )
+            )
+          : null,
+        Array.isArray(entry.payload?.files) && entry.payload.files.length > 0
+          ? el(
+              'div',
+              { class: 'files-list', attrs: { 'aria-label': 'File attachments' } },
+              entry.payload.files.map((f, i) => {
+                const sizeMb = ((f.dataB64.length * 0.75) / 1024 / 1024).toFixed(2);
+                return el('div', { class: 'file-row' }, [
+                  el('span', { class: 'file-name' }, [f.name || `file ${i + 1}`]),
+                  el('span', { class: 'file-meta' }, [`${f.type || 'unknown'} · ${sizeMb} MB`]),
+                  el('button', {
+                    type: 'button',
+                    class: 'btn btn-secondary file-download',
+                    onClick: () => downloadFile(f)
+                  }, ['Download'])
+                ]);
+              })
             )
           : null,
         el('div', { class: 'expandable' }, [verifyToggle, verifyBody])

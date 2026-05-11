@@ -95,6 +95,21 @@ function renderEntry(entry, supersededUuids) {
     );
   }
 
+  if (Array.isArray(entry.payload?.files) && entry.payload.files.length > 0) {
+    children.push(
+      el(
+        'ul',
+        { class: 'print-audio-list' },
+        entry.payload.files.map((f) => {
+          const sizeMb = f.dataB64 ? ((f.dataB64.length * 0.75) / 1024 / 1024).toFixed(2) : '?';
+          return el('li', {}, [
+            `File: ${f.name || 'unnamed'} (${f.type || 'unknown'}, ~${sizeMb} MB)`
+          ]);
+        })
+      )
+    );
+  }
+
   children.push(
     el('dl', { class: 'print-hash' }, [
       el('dt', {}, ['UUID']),

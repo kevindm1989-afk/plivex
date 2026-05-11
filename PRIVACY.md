@@ -1,6 +1,6 @@
 # Privacy Policy
 
-**Last updated:** 2026-05-11 (v1.9.0)
+**Last updated:** 2026-05-11 (v1.14.0)
 
 ## Plain language summary
 
@@ -98,3 +98,7 @@ Entries can include audio clips (up to 3 per entry, 25 MB each). Audio is stored
 Recording uses your browser's microphone via `getUserMedia`, which prompts you for permission the first time. The audio stream is captured locally by your browser, stored encrypted, and never transmitted off your device. Plivex does not analyze, transcribe, or process audio content in any way — it only stores the raw bytes you record or upload.
 
 Whether recording a particular conversation is legal depends on your jurisdiction and the parties involved. Plivex provides the technical capability; the legal responsibility is yours.
+
+## File attachments
+
+Entries can carry general file attachments (up to 3 per entry, 15 MB each) — typically PDFs, but any file type is accepted. Files are stored inside the same encrypted payload as the rest of the entry, covered by the hash chain, and included in backup exports. They are decrypted back to your device when you tap Download on the entry detail; Plivex never uploads them anywhere.

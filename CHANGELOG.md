@@ -2,6 +2,21 @@
 
 All notable changes to Plivex are recorded here. Versions follow semantic versioning. Each release is also tagged in git.
 
+## [1.14.0] — 2026-05-11
+
+### Added
+- **File attachments on entries.** Up to 3 files per entry, 15 MB each. Any file type accepted (PDFs, text documents, spreadsheets, anything). Stored base64 inside the encrypted payload — same model as photos and audio. Downloaded back out via a Blob + object-URL `<a download>` on the entry detail; the file never leaves the device through Plivex.
+- **Search highlighting.** When the search box has text, matches in entry-row titles and previews are wrapped in `<mark>` and rendered in a warm-yellow tint. Composes with all existing filters.
+- Filenames of photos, audio, and files are now included in the search corpus alongside the existing fields (title, content, witness, location, type).
+
+### Changed
+- `APP_VERSION` `1.13.0` → `1.14.0`. `CACHE_VERSION` `plivex-v17` → `plivex-v18`.
+- Help screen: "What an entry can hold" lists files.
+- `PRIVACY.md`: new "File attachments" section.
+
+### Tests
+- 1 new test: round-trip an entry with a `files` field. 183 total passing.
+
 ## [1.13.0] — 2026-05-11
 
 ### Added

@@ -1274,6 +1274,62 @@ body.overlay-open {
   background: rgba(110, 231, 167, 0.08);
 }
 
+.tag-files {
+  color: #d4a04a;
+  border-color: #d4a04a;
+  background: rgba(212, 160, 74, 0.10);
+}
+
+/* Search highlight (mark) ------------------------------------------- */
+
+mark {
+  background: rgba(212, 160, 74, 0.35);
+  color: var(--fg);
+  border-radius: 2px;
+  padding: 0 1px;
+}
+
+/* File attachments -------------------------------------------------- */
+
+.files-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.files-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: var(--space-2) 0;
+}
+
+.file-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.file-name {
+  flex: 1 1 12rem;
+  font-size: 0.95rem;
+  color: var(--fg);
+  word-break: break-all;
+}
+.file-meta {
+  flex: 1 1 100%;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.file-download {
+  min-height: 36px;
+  padding: 0 var(--space-3);
+}
+
 .tag-followup {
   background: rgba(160, 160, 160, 0.10);
 }

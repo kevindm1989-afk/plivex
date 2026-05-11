@@ -39,6 +39,14 @@ function entryMatchesText(entry, query) {
     const v = p[field];
     if (typeof v === 'string' && v.toLowerCase().includes(q)) return true;
   }
+  // Attachment filenames are user-meaningful; let them match search.
+  for (const collection of ['photos', 'audio', 'files']) {
+    const arr = p[collection];
+    if (!Array.isArray(arr)) continue;
+    for (const a of arr) {
+      if (a && typeof a.name === 'string' && a.name.toLowerCase().includes(q)) return true;
+    }
+  }
   return false;
 }
 
@@ -65,6 +73,29 @@ function followUpStatus(entry, supersededUuids) {
   }
   if (due === today) return { kind: 'due', label: 'Due today', date: due };
   return { kind: 'future', label: `Follow-up ${due}`, date: due };
+}
+
+// Split `text` into an array of strings and <mark> elements based on
+// case-insensitive matches of `query`. Empty query returns a single
+// string. Children-shaped: works directly as el() children.
+function highlightMatches(text, query) {
+  if (!query || !text) return [text];
+  const t = String(text);
+  const q = query.toLowerCase();
+  const lower = t.toLowerCase();
+  const out = [];
+  let i = 0;
+  while (i < t.length) {
+    const idx = lower.indexOf(q, i);
+    if (idx === -1) {
+      out.push(t.slice(i));
+      break;
+    }
+    if (idx > i) out.push(t.slice(i, idx));
+    out.push(el('mark', {}, [t.slice(idx, idx + q.length)]));
+    i = idx + q.length;
+  }
+  return out;
 }
 
 export async function render(root, controller) {
@@ -381,7 +412,9 @@ export async function render(root, controller) {
           'div',
           { class: 'entry-row-header' },
           [
-            el('h3', { class: 'entry-row-title' }, [entryTitle(entry.payload)]),
+            el('h3', { class: 'entry-row-title' },
+              highlightMatches(entryTitle(entry.payload), searchQuery)
+            ),
             entry.payload?.type
               ? el('span', { class: 'tag tag-type' }, [entry.payload.type])
               : null,
@@ -398,13 +431,20 @@ export async function render(root, controller) {
                   `${entry.payload.audio.length} audio`
                 ])
               : null,
+            Array.isArray(entry.payload?.files) && entry.payload.files.length > 0
+              ? el('span', { class: 'tag tag-files' }, [
+                  `${entry.payload.files.length} file${entry.payload.files.length === 1 ? '' : 's'}`
+                ])
+              : null,
             isSuperseded ? el('span', { class: 'tag tag-muted' }, ['superseded']) : null,
             isEdit ? el('span', { class: 'tag' }, ['edited']) : null
           ].filter(Boolean)
         ),
         el('p', { class: 'entry-row-meta' }, [formatDateTime(entry.created_at)]),
         entryPreview(entry.payload)
-          ? el('p', { class: 'entry-row-preview' }, [entryPreview(entry.payload)])
+          ? el('p', { class: 'entry-row-preview' },
+              highlightMatches(entryPreview(entry.payload), searchQuery)
+            )
           : null
       ].filter(Boolean)
     );

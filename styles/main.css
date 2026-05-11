@@ -1325,6 +1325,163 @@ body.overlay-open {
   margin: 0 0 var(--space-2);
 }
 
+/* Statistics screen ------------------------------------------------- */
+
+.stats-screen {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.stat-block {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--space-3) var(--space-4);
+}
+.stat-block-title {
+  margin: 0 0 var(--space-3);
+  font-size: 1rem;
+  color: var(--accent);
+  font-weight: 600;
+}
+.stat-defs {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--space-1) var(--space-3);
+  margin: 0;
+  font-size: 0.95rem;
+}
+.stat-defs dt { color: var(--muted); }
+.stat-defs dd { margin: 0; word-break: break-word; }
+.stat-defs dt.fu-overdue, .stat-defs dd.fu-overdue { color: var(--danger); }
+.stat-defs dt.fu-due, .stat-defs dd.fu-due { color: #d4a04a; }
+
+.stat-row {
+  display: grid;
+  grid-template-columns: 7rem 1fr 2.5rem;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+.stat-row-label {
+  font-size: 0.9rem;
+  color: var(--muted-strong);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.stat-row-count {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.9rem;
+  color: var(--fg);
+}
+.stat-bar {
+  width: 100%;
+  height: 8px;
+  color: var(--accent);
+}
+.stat-bar rect {
+  fill: currentColor;
+  opacity: 0.8;
+}
+
+/* Calendar screen --------------------------------------------------- */
+
+.calendar-screen {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.calendar-month {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--space-3);
+}
+.calendar-month-heading {
+  margin: 0 0 var(--space-2);
+  font-size: 1rem;
+  color: var(--accent);
+  font-weight: 600;
+}
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+.calendar-dow {
+  text-align: center;
+  font-size: 0.7rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  padding: var(--space-1) 0;
+  letter-spacing: 0.05em;
+}
+.calendar-cell {
+  aspect-ratio: 1 / 1;
+  border-radius: 4px;
+  background: var(--bg-input);
+  border: 1px solid transparent;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  color: var(--muted);
+  padding: 0;
+  cursor: default;
+}
+.calendar-cell-blank {
+  background: transparent;
+}
+.calendar-cell-has {
+  cursor: pointer;
+  background: rgba(106, 168, 255, 0.10);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.calendar-cell-has:hover {
+  background: rgba(106, 168, 255, 0.20);
+}
+.calendar-cell-has:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.calendar-cell-today {
+  outline: 1px dashed var(--muted-strong);
+  outline-offset: -3px;
+}
+.calendar-cell-day {
+  font-size: 0.85rem;
+  line-height: 1;
+}
+.calendar-cell-count {
+  font-size: 0.7rem;
+  font-weight: 600;
+  margin-top: 1px;
+  color: inherit;
+}
+.calendar-day-detail {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  padding: var(--space-3);
+}
+.calendar-day-heading {
+  margin: 0 0 var(--space-2);
+  font-size: 1rem;
+  color: var(--accent);
+}
+.calendar-day-list {
+  list-style: disc;
+  padding-left: 1.25rem;
+  margin: 0;
+}
+.calendar-day-list li {
+  margin-bottom: var(--space-1);
+}
+
 /* Storage usage panel ----------------------------------------------- */
 
 .storage-usage {

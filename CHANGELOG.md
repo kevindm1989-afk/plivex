@@ -2,6 +2,22 @@
 
 All notable changes to Plivex are recorded here. Versions follow semantic versioning. Each release is also tagged in git.
 
+## [1.13.0] — 2026-05-11
+
+### Added
+- **Statistics screen.** Settings → Records and integrity → Open statistics. Counts of active vs all-time entries, first/last entry, by-type breakdown (horizontal SVG bar charts — no inline styles, CSP-clean), by-month breakdown (last 12), follow-up status (overdue / today / this week / future), attachment totals, and storage usage. All computation runs locally on already-decrypted entries.
+- **Calendar view.** New icon button in the entry-list topbar opens a month-by-month grid (Monday-first). Days with entries are accented; today is dashed-outlined. Tap any day with entries → list of that day's entries inline below the calendar, each item linking to the entry detail.
+- New `src/ui/screens/stats.js` and `src/ui/screens/calendar.js` registered as routes.
+- New `iconCalendar` and `iconChart` SVG icons.
+- Help screen: new "Calendar and statistics" section.
+
+### Changed
+- `APP_VERSION` `1.12.0` → `1.13.0`. `CACHE_VERSION` `plivex-v16` → `plivex-v17`. New stats.js + calendar.js added to `APP_SHELL`.
+- `manifest.webmanifest`: added `"categories": ["productivity", "utilities"]` for better PWA discoverability.
+
+### Tests
+- No new tests. Stats and calendar are read-only views over `listEntries`, which already has coverage. 182/182 still passing.
+
 ## [1.12.0] — 2026-05-11
 
 ### Added

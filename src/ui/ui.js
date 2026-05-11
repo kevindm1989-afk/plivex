@@ -9,6 +9,8 @@ import * as settings from './screens/settings.js';
 import * as certificate from './screens/certificate.js';
 import * as help from './screens/help.js';
 import * as printView from './screens/print-view.js';
+import * as stats from './screens/stats.js';
+import * as calendar from './screens/calendar.js';
 
 const isStandalone = () =>
   window.matchMedia('(display-mode: standalone)').matches ||
@@ -70,6 +72,12 @@ async function draw() {
   }
   if (currentScreen === 'print-view') {
     return printView.render(root, controller, currentParams);
+  }
+  if (currentScreen === 'stats') {
+    return stats.render(root, controller);
+  }
+  if (currentScreen === 'calendar') {
+    return calendar.render(root, controller);
   }
   return entryList.render(root, controller);
 }

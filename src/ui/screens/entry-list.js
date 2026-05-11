@@ -1,6 +1,6 @@
 import { el, clear, svgFromString, formatDateTime } from '../dom.js';
 import { Button } from '../components/button.js';
-import { iconGear, iconLock, iconPlus } from '../icons.js';
+import { iconGear, iconLock, iconPlus, iconCalendar } from '../icons.js';
 import { TEMPLATES } from '../templates.js';
 import * as app from '../../app.js';
 
@@ -76,6 +76,16 @@ export async function render(root, controller) {
   const topbar = el('header', { class: 'topbar' }, [
     el('h1', { class: 'topbar-title' }, ['Plivex']),
     el('div', { class: 'topbar-actions' }, [
+      el(
+        'button',
+        {
+          type: 'button',
+          class: 'icon-button',
+          attrs: { 'aria-label': 'Calendar' },
+          onClick: () => controller.navigate('calendar')
+        },
+        [svgFromString(iconCalendar())]
+      ),
       el(
         'button',
         {

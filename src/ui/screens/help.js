@@ -76,6 +76,11 @@ export function render(root, controller) {
         'The backup-reminder banner on the entry list nudges you when you haven\'t exported in a while. Cadence is configurable in Settings → Backup reminders (Off / 3 / 7 / 14 / 30 days).'
       ]),
 
+      section('Calendar and statistics', [
+        'The calendar icon in the entry-list topbar opens a month-by-month view of when your entries were written. Tap any date with entries to expand the list of that day\'s entries below the calendar.',
+        'Settings → Records and integrity → Statistics shows counts by type, by month, follow-up status, attachment totals, and storage usage. Everything runs locally on already-decrypted entries — no calculation happens off your device.'
+      ]),
+
       section('Printing and PDF', [
         'Open any entry and tap Print to generate a printable single-entry page. Use your browser\'s print dialog to send it to a printer or save it as a PDF.',
         'Settings → Print archive generates a printable view of every entry, optionally filtered by date. Each entry on the printout includes its hash and the previous-entry hash, plus the current chain head at the top — so the printout itself can be cross-checked against the live chain.',

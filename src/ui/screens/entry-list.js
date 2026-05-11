@@ -47,20 +47,37 @@ export async function render(root, controller) {
   ]);
   screen.appendChild(topbar);
 
-  // Backup reminder banner (conditional, best-effort).
+  // Reminder banners (conditional, best-effort).
   try {
     if (await app.shouldRemindBackup()) {
-      const banner = el('div', { class: 'reminder-banner', role: 'status' }, [
-        el('span', { class: 'reminder-message' }, [
-          'You haven\'t exported a backup recently.'
-        ]),
-        el('button', {
-          type: 'button',
-          class: 'btn btn-secondary',
-          onClick: () => controller.navigate('settings')
-        }, ['Export now'])
-      ]);
-      screen.appendChild(banner);
+      screen.appendChild(
+        el('div', { class: 'reminder-banner', role: 'status' }, [
+          el('span', { class: 'reminder-message' }, [
+            'You haven\'t exported a backup recently.'
+          ]),
+          el('button', {
+            type: 'button',
+            class: 'btn btn-secondary',
+            onClick: () => controller.navigate('settings')
+          }, ['Export now'])
+        ])
+      );
+    }
+  } catch {}
+  try {
+    if (await app.shouldRemindVerify()) {
+      screen.appendChild(
+        el('div', { class: 'reminder-banner', role: 'status' }, [
+          el('span', { class: 'reminder-message' }, [
+            'Chain integrity hasn\'t been verified recently.'
+          ]),
+          el('button', {
+            type: 'button',
+            class: 'btn btn-secondary',
+            onClick: () => controller.navigate('settings')
+          }, ['Verify now'])
+        ])
+      );
     }
   } catch {}
 
@@ -126,6 +143,7 @@ export async function render(root, controller) {
     }, [
       el('div', { class: 'entry-row-header' }, [
         el('h2', { class: 'entry-row-title' }, [entryTitle(entry.payload)]),
+        entry.payload?.type ? el('span', { class: 'tag tag-type' }, [entry.payload.type]) : null,
         isSuperseded ? el('span', { class: 'tag tag-muted' }, ['superseded']) : null,
         isEdit ? el('span', { class: 'tag' }, ['edited']) : null
       ].filter(Boolean)),

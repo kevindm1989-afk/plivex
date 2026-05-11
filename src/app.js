@@ -45,6 +45,10 @@ export const DEFAULT_AUTO_LOCK_MINUTES = 15;
 export const ALLOWED_BACKUP_REMINDER_DAYS = [0, 3, 7, 14, 30];
 export const DEFAULT_BACKUP_REMINDER_DAYS = 7;
 
+// Integrity-verification reminder cadence in days. 0 = disabled.
+export const ALLOWED_VERIFY_REMINDER_DAYS = [0, 7, 30, 90];
+export const DEFAULT_VERIFY_REMINDER_DAYS = 30;
+
 function assertStatus(allowed, op) {
   const ok = Array.isArray(allowed) ? allowed.includes(_status) : _status === allowed;
   if (!ok) {
@@ -222,7 +226,15 @@ export async function countEntries() {
 
 export async function verifyIntegrity() {
   assertUnlockedAndActive('verifyIntegrity');
-  return verifyChain(_db, _masterKey);
+  const result = await verifyChain(_db, _masterKey);
+  if (result.valid) {
+    // Mark a successful verification so the reminder banner can stay quiet
+    // until the next cadence window. Best-effort.
+    try {
+      await putMetaRecord(_db, 'last_verified_at', new Date(_now()).toISOString());
+    } catch {}
+  }
+  return result;
 }
 
 export function getAutoLockMinutes() {
@@ -274,6 +286,39 @@ export async function shouldRemindBackup() {
   return elapsedMs > days * 24 * 60 * 60 * 1000;
 }
 
+export async function getVerifyReminderDays() {
+  if (!_db) return DEFAULT_VERIFY_REMINDER_DAYS;
+  const rec = await getMetaRecord(_db, 'verify_reminder_days');
+  return rec?.value ?? DEFAULT_VERIFY_REMINDER_DAYS;
+}
+
+export async function setVerifyReminderDays(days) {
+  assertUnlockedAndActive('setVerifyReminderDays');
+  if (!ALLOWED_VERIFY_REMINDER_DAYS.includes(days)) {
+    throw new Error(
+      `setVerifyReminderDays: ${days} is not one of ${ALLOWED_VERIFY_REMINDER_DAYS.join(', ')}`
+    );
+  }
+  await putMetaRecord(_db, 'verify_reminder_days', days);
+  return { ok: true };
+}
+
+export async function getLastVerifiedAt() {
+  if (!_db) return null;
+  const rec = await getMetaRecord(_db, 'last_verified_at');
+  return rec?.value ?? null;
+}
+
+export async function shouldRemindVerify() {
+  if (_status !== 'unlocked' && _status !== 'locked') return false;
+  const days = await getVerifyReminderDays();
+  if (days === 0) return false;
+  const last = await getLastVerifiedAt();
+  if (!last) return true;
+  const elapsedMs = _now() - new Date(last).getTime();
+  return elapsedMs > days * 24 * 60 * 60 * 1000;
+}
+
 export async function getChainHead() {
   assertStatus(['locked', 'unlocked'], 'getChainHead');
   const latest = await getLatestEntry(_db);
@@ -320,7 +365,7 @@ export async function getStatus() {
   return { status: _status };
 }
 
-export const APP_VERSION = '1.3.0';
+export const APP_VERSION = '1.4.0';
 export const EXPORT_FORMAT = 'plivex-export';
 export const EXPORT_FORMAT_VERSION = 1;
 

@@ -144,6 +144,33 @@ export async function render(root, controller) {
   ]);
   screen.appendChild(topbar);
 
+  // Load entries up front so we can compute the follow-up-due count for
+  // the banner row. (Was previously loaded later, which left the
+  // followUpDueCount reference below in a temporal dead zone and threw a
+  // ReferenceError that aborted the entire render — see the v1.14.1
+  // hotfix note in CHANGELOG.md.)
+  let entries;
+  try {
+    entries = await app.listEntries();
+  } catch (err) {
+    screen.appendChild(
+      el('p', { class: 'entry-row-error' }, ['Failed to load entries.'])
+    );
+    return;
+  }
+
+  // Pre-compute superseded uuids and follow-up-due count over the
+  // chronological entries (pre-reverse).
+  const supersededUuids = new Set();
+  for (const e of entries) {
+    if (e.supersedes) supersededUuids.add(e.supersedes);
+  }
+  let followUpDueCount = 0;
+  for (const e of entries) {
+    const s = followUpStatus(e, supersededUuids);
+    if (s && (s.kind === 'due' || s.kind === 'overdue')) followUpDueCount++;
+  }
+
   // Reminder banners (conditional, best-effort).
   try {
     if (await app.shouldRemindBackup()) {
@@ -227,40 +254,10 @@ export async function render(root, controller) {
   composeBtn.classList.add('compose-btn');
   screen.appendChild(composeBtn);
 
-  // Loading placeholder until entries arrive.
-  const listEl = el('div', {
-    class: 'entry-list-content',
-    attrs: { 'aria-busy': 'true' }
-  }, [el('p', { class: 'entry-row-loading' }, ['Loading…'])]);
-  screen.appendChild(listEl);
-
-  let entries;
-  try {
-    entries = await app.listEntries();
-  } catch (err) {
-    clear(listEl);
-    listEl.removeAttribute('aria-busy');
-    listEl.appendChild(el('p', { class: 'entry-row-error' }, ['Failed to load entries.']));
-    return;
-  }
-
-  // Pre-compute index of superseded uuids and reverse for newest-first.
-  const supersededUuids = new Set();
-  for (const e of entries) {
-    if (e.supersedes) supersededUuids.add(e.supersedes);
-  }
-
-  // Count follow-ups that are due today or overdue (non-superseded only).
-  let followUpDueCount = 0;
-  for (const e of entries) {
-    const s = followUpStatus(e, supersededUuids);
-    if (s && (s.kind === 'due' || s.kind === 'overdue')) followUpDueCount++;
-  }
-
+  // List container (entries computed up front; reverse for newest-first).
   entries.reverse();
-
-  listEl.removeAttribute('aria-busy');
-  clear(listEl);
+  const listEl = el('div', { class: 'entry-list-content' });
+  screen.appendChild(listEl);
 
   if (entries.length === 0) {
     screen.appendChild(

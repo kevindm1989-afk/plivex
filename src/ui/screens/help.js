@@ -46,7 +46,7 @@ export function render(root, controller) {
       ]),
 
       section('What an entry can hold', [
-        'Each entry has a title and content. You can also add: a type (Schedule, Pay, Safety, Discipline, Harassment, Meeting, Conversation, Injury, Other), a witness name, a location, up to 5 photos (10 MB each), and up to 3 audio clips (25 MB each).',
+        'Each entry has a title and content. You can also add: a type (Schedule, Pay, Safety, Discipline, Harassment, Meeting, Conversation, Injury, Other), a witness name, a location, a "follow up by" date, up to 5 photos (10 MB each), and up to 3 audio clips (25 MB each).',
         'Audio can be recorded directly in the app, or attached from an existing file. Photo bytes are kept as-is — Plivex does not strip EXIF. If a photo carries a capture time or GPS, that metadata is preserved inside the encrypted payload.',
         'Recording requires microphone permission from your browser the first time. Whether or not recording a particular conversation is legal depends on where you are and who is speaking — check your jurisdiction\'s rules before relying on it.'
       ]),
@@ -59,6 +59,11 @@ export function render(root, controller) {
       section('The verification certificate', [
         'Settings → View verification certificate generates a one-page printable summary: total entries, the chain head, the genesis hash, and any superseded entries. Print it and sign on paper (with a witness signature line if you want).',
         'A signed certificate is an offline anchor: it proves your chain was in this exact state on this date, without needing a server or any third-party service.'
+      ]),
+
+      section('Follow-up dates', [
+        'Each entry can carry an optional "Follow up by" date. The entry list shows a banner when any non-superseded entry\'s follow-up is today or in the past, plus a tag on each affected row ("Due today" / "Overdue Xd"). Future follow-ups appear as a quieter tag showing the date.',
+        'Editing an entry supersedes the original, which clears the original from the follow-up count. If the follow-up is still pending, set a new follow-up date on the replacement.'
       ]),
 
       section('Editing entries (supersede semantics)', [

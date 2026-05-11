@@ -465,21 +465,60 @@ code, .mono {
 .settings {
   display: flex;
   flex-direction: column;
+  gap: var(--space-3);
+}
+.settings-group {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-elevated);
+  overflow: hidden;
+}
+.settings-group-summary {
+  padding: var(--space-3) var(--space-4);
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--accent);
+  list-style: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: var(--touch);
+}
+.settings-group-summary::-webkit-details-marker { display: none; }
+.settings-group-summary::after {
+  content: '+';
+  font-size: 1.2rem;
+  color: var(--muted);
+  margin-left: var(--space-2);
+}
+.settings-group[open] > .settings-group-summary::after { content: '−'; }
+.settings-group[open] > .settings-group-summary {
+  border-bottom: 1px solid var(--border);
+}
+.settings-group-summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.settings-group-body {
+  padding: var(--space-3) var(--space-4) var(--space-4);
+  display: flex;
+  flex-direction: column;
   gap: var(--space-4);
 }
 .settings-section {
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: var(--space-3);
-  background: var(--bg-elevated);
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
 }
+.settings-section + .settings-section {
+  border-top: 1px solid var(--border);
+  padding-top: var(--space-3);
+}
 .settings-section h2 {
-  margin: 0 0 var(--space-2);
-  font-size: 1rem;
-  color: var(--accent);
+  margin: 0 0 var(--space-1);
+  font-size: 0.95rem;
+  color: var(--muted-strong);
   font-weight: 600;
 }
 
@@ -1233,6 +1272,57 @@ body.overlay-open {
   color: var(--success);
   border-color: var(--success);
   background: rgba(110, 231, 167, 0.08);
+}
+
+.tag-followup {
+  background: rgba(160, 160, 160, 0.10);
+}
+.tag-followup-future {
+  color: var(--muted-strong);
+  border-color: var(--border-strong);
+}
+.tag-followup-due {
+  color: #d4a04a;
+  border-color: #d4a04a;
+  background: rgba(212, 160, 74, 0.10);
+}
+.tag-followup-overdue {
+  color: var(--danger);
+  border-color: var(--danger);
+  background: rgba(255, 107, 107, 0.10);
+}
+
+.reminder-banner-warn {
+  background: rgba(212, 160, 74, 0.12);
+  border-color: #d4a04a;
+}
+
+/* Lock screen recovery info ------------------------------------------ */
+
+.lock-recovery {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0 var(--space-3);
+  margin-bottom: var(--space-3);
+  text-align: left;
+}
+.lock-recovery > summary {
+  cursor: pointer;
+  padding: var(--space-2) 0;
+  color: var(--muted-strong);
+  font-size: 0.9rem;
+  list-style: none;
+}
+.lock-recovery > summary::-webkit-details-marker { display: none; }
+.lock-recovery > summary::before {
+  content: '▸';
+  display: inline-block;
+  margin-right: var(--space-2);
+  color: var(--muted);
+}
+.lock-recovery[open] > summary::before { content: '▾'; }
+.lock-recovery > p {
+  margin: 0 0 var(--space-2);
 }
 
 /* Storage usage panel ----------------------------------------------- */

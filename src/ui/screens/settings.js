@@ -13,6 +13,14 @@ function section(title, children) {
   ]);
 }
 
+function group(title, children, { open = false } = {}) {
+  const det = el('details', { class: 'settings-group' });
+  if (open) det.setAttribute('open', '');
+  det.appendChild(el('summary', { class: 'settings-group-summary' }, [title]));
+  det.appendChild(el('div', { class: 'settings-group-body' }, children));
+  return det;
+}
+
 function changePassphraseSection(controller) {
   let cur = '';
   let next = '';
@@ -637,19 +645,31 @@ export function render(root, controller) {
   root.appendChild(
     el('section', { class: 'screen settings' }, [
       topbar,
-      changePassphraseSection(controller),
-      autoLockSection(),
-      exportSection(),
-      backupReminderSection(),
-      importSection(controller),
-      verifySection(),
-      chainTimestampSection(),
-      certificateSection(controller),
-      printArchiveSection(controller),
-      storageSection(),
-      helpSection(controller),
-      wipeSection(controller),
-      aboutSection()
+      group('Security', [
+        changePassphraseSection(controller),
+        autoLockSection()
+      ], { open: true }),
+      group('Data', [
+        exportSection(),
+        backupReminderSection(),
+        importSection(controller),
+        storageSection()
+      ]),
+      group('Records and integrity', [
+        verifySection(),
+        chainTimestampSection(),
+        certificateSection(controller),
+        printArchiveSection(controller)
+      ]),
+      group('Help', [
+        helpSection(controller)
+      ]),
+      group('Danger zone', [
+        wipeSection(controller)
+      ]),
+      group('About', [
+        aboutSection()
+      ], { open: true })
     ])
   );
 }

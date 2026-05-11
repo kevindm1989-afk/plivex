@@ -77,6 +77,7 @@ export async function render(root, controller, params = {}) {
   let type = original?.payload?.type ?? (template?.type ?? '');
   let witness = original?.payload?.witness ?? '';
   let location = original?.payload?.location ?? '';
+  let followUpDate = original?.payload?.followUpDate ?? '';
   let photos = Array.isArray(original?.payload?.photos)
     ? original.payload.photos.slice()
     : [];
@@ -146,6 +147,23 @@ export async function render(root, controller, params = {}) {
       dirty = true;
     }
   });
+
+  const followUpInput = el('input', {
+    type: 'date',
+    id: 'entry-follow-up',
+    class: 'date-input',
+    value: followUpDate,
+    onInput: (e) => {
+      followUpDate = e.target.value;
+      dirty = true;
+    }
+  });
+  const followUpField = el('div', { class: 'field' }, [
+    el('label', { for: 'entry-follow-up', class: 'field-label' }, [
+      'Follow up by (optional)'
+    ]),
+    followUpInput
+  ]);
 
   // Photos field: hidden file input + visible "Add photo" button + grid of
   // thumbnails. Photos are stored inline in the encrypted payload so the
@@ -370,6 +388,7 @@ export async function render(root, controller, params = {}) {
       if (type) payload.type = type;
       if (witness) payload.witness = witness;
       if (location) payload.location = location;
+      if (followUpDate) payload.followUpDate = followUpDate;
       if (photos.length > 0) payload.photos = photos;
       if (audios.length > 0) payload.audio = audios;
       const options = mode === 'edit' && original ? { supersedes: original.uuid } : undefined;
@@ -416,6 +435,7 @@ export async function render(root, controller, params = {}) {
     contentField.wrap,
     witnessField.wrap,
     locationField.wrap,
+    followUpField,
     photoField,
     audioField,
     errorEl

@@ -2,6 +2,20 @@
 
 All notable changes to Plivex are recorded here. Versions follow semantic versioning. Each release is also tagged in git.
 
+## [1.12.0] — 2026-05-11
+
+### Added
+- **Follow-up dates.** New optional `followUpDate` (YYYY-MM-DD) per entry. Set in the entry form alongside witness/location. Displayed on entry detail, in print views, and as a row tag on the entry list: "Overdue Xd" / "Due today" / "Follow-up YYYY-MM-DD" (future). A warning banner on the entry list aggregates the count of non-superseded entries due today or overdue.
+- **Lock-screen recovery info.** New collapsible "How recovery works" panel below the unlock form, explaining there is no recovery, what an existing backup lets you do, and what the wipe path means.
+
+### Changed
+- **Settings reorganized into collapsible groups:** Security (passphrase, auto-lock — open by default), Data (export, backup reminders, import, storage), Records and integrity (verify, chain timestamping, certificate, print archive), Help, Danger zone (wipe), About (open by default). Built on native `<details>` so it's keyboard-accessible and CSP-clean.
+- Lock screen wrong-passphrase message now reminds the user there is no recovery, no failed-attempt counter, and no developer override.
+- `APP_VERSION` `1.11.0` → `1.12.0`. `CACHE_VERSION` `plivex-v15` → `plivex-v16`.
+
+### Tests
+- 1 new test: round-trip an entry with a `followUpDate` field. 182 total passing.
+
 ## [1.11.0] — 2026-05-11
 
 ### Added

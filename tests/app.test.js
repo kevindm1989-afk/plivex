@@ -438,6 +438,18 @@ describe('photo attachments', () => {
     assert.deepEqual(got.payload, payload);
   });
 
+  test('createEntry round-trips followUpDate unchanged', async (t) => {
+    await freshAndUnlocked(t);
+    const payload = {
+      title: 'await reply',
+      content: 'sent email; expect a response by Friday',
+      followUpDate: '2026-05-15'
+    };
+    const { id } = await app.createEntry(payload);
+    const got = await app.getEntry(id);
+    assert.deepEqual(got.payload, payload);
+  });
+
   test('createEntry round-trips audio field unchanged', async (t) => {
     await freshAndUnlocked(t);
     const payload = {

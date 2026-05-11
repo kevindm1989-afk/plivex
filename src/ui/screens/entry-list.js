@@ -47,6 +47,23 @@ export async function render(root, controller) {
   ]);
   screen.appendChild(topbar);
 
+  // Backup reminder banner (conditional, best-effort).
+  try {
+    if (await app.shouldRemindBackup()) {
+      const banner = el('div', { class: 'reminder-banner', role: 'status' }, [
+        el('span', { class: 'reminder-message' }, [
+          'You haven\'t exported a backup recently.'
+        ]),
+        el('button', {
+          type: 'button',
+          class: 'btn btn-secondary',
+          onClick: () => controller.navigate('settings')
+        }, ['Export now'])
+      ]);
+      screen.appendChild(banner);
+    }
+  } catch {}
+
   // Compose action
   const composeBtn = Button({
     label: 'New entry',

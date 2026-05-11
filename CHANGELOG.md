@@ -2,11 +2,23 @@
 
 All notable changes to Plivex are recorded here. Versions follow semantic versioning. Each release is also tagged in git.
 
+## [1.3.0] — 2026-05-11
+
+### Added
+- **Backup-reminder banner.** Entry list shows a banner when `last_export_at` is older than the configured cadence. Settings → "Backup reminders" select with Off / 3 / 7 / 14 / 30 days (default: 7). `app.shouldRemindBackup()`, `app.getBackupReminderDays()`, `app.setBackupReminderDays()`. `last_export_at` written automatically on every `exportBackup`.
+- **Hashed export filenames.** Downloads named `plivex-backup-YYYY-MM-DD-Nentries-XXXXXXXX.json` where the suffix is the first 8 hex chars of the chain head (or `genesis` for an empty chain).
+- **Chain timestamping panel** in Settings. Shows the current chain head (latest entry hash). "Copy chain head" button uses the local clipboard API. Brief copy explains submitting to OpenTimestamps; the app never contacts any third-party service on its own.
+- **Verification certificate screen.** Settings → "View verification certificate" → printable one-page summary (generated date, app version, total entries, genesis hash, first/last entry hashes, list of supersede records, signature lines for holder + optional witness). `@media print` CSS strips the app chrome. `app.getCertificateData()` returns the structural metadata.
+
+### Changed
+- `APP_VERSION` `1.2.0` → `1.3.0`. `CACHE_VERSION` `plivex-v6` → `plivex-v7`. New `./src/ui/screens/certificate.js` added to `APP_SHELL`.
+
+### Tests
+- 12 new tests (5 backup-reminder + 3 chain-head + 4 certificate). 170 total passing.
+
 ## [Unreleased]
 
-- Solo-use simplification: removed `CONTRIBUTING.md` and `SECURITY.md` (assumed external contributors/researchers). Trimmed `TERMS.md` to engineering description only (dropped warranty, limitation-of-liability, no-relationship, permitted-use, forking, changes, governing-law, severability, and entire-agreement sections — kept nature-of-software, auto-lock, not-professional-advice, not-evidence-management-software, your-responsibilities, and license-reference).
-- Added `docs/THREAT_MODEL.md` — explicit engineering documentation of what Plivex protects against and what it doesn't. Companion to PRIVACY.md.
-- Earlier in unreleased: CSP meta tag in `index.html`, `CHANGELOG.md`. Last-updated dates filled in across `PRIVACY.md`, `TERMS.md`, and `docs/EVIDENTIARY_USE.md`.
+(none)
 
 ## [1.2.0] — 2026-05-09
 

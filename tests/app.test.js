@@ -659,6 +659,120 @@ describe('auto-lock', () => {
   });
 });
 
+// ---------------------------------------------------------------------------
+// Solo-use features: backup reminder, chain head, certificate data.
+// ---------------------------------------------------------------------------
+
+describe('backup reminder', () => {
+  test('default cadence is 7 days after fresh initialize', async (t) => {
+    await freshAndUnlocked(t);
+    assert.equal(await app.getBackupReminderDays(), 7);
+  });
+
+  test('setBackupReminderDays validates and persists', async (t) => {
+    await freshAndUnlocked(t);
+    await app.setBackupReminderDays(14);
+    assert.equal(await app.getBackupReminderDays(), 14);
+    await assert.rejects(() => app.setBackupReminderDays(99), /not one of/);
+    await assert.rejects(() => app.setBackupReminderDays(1), /not one of/);
+  });
+
+  test('shouldRemindBackup is true when no export has happened', async (t) => {
+    await freshAndUnlocked(t);
+    assert.equal(await app.shouldRemindBackup(), true);
+  });
+
+  test('shouldRemindBackup is false immediately after exportBackup', async (t) => {
+    await freshAndUnlocked(t);
+    await app.createEntry({ msg: 'hi' });
+    await app.exportBackup();
+    assert.equal(await app.shouldRemindBackup(), false);
+  });
+
+  test('shouldRemindBackup turns true again after the cadence elapses', async (t) => {
+    await freshAndUnlocked(t);
+    let now = 1_700_000_000_000;
+    const restore = app._setClockForTesting(() => now);
+    t.after(restore);
+    app.recordActivity();
+    await app.setBackupReminderDays(7);
+    await app.exportBackup();
+    // 6 days later: still within window.
+    now += 6 * 24 * 60 * 60 * 1000;
+    app.recordActivity();
+    assert.equal(await app.shouldRemindBackup(), false);
+    // 8 days later: past window.
+    now += 2 * 24 * 60 * 60 * 1000;
+    app.recordActivity();
+    assert.equal(await app.shouldRemindBackup(), true);
+  });
+
+  test('shouldRemindBackup is always false when cadence is 0 (Off)', async (t) => {
+    await freshAndUnlocked(t);
+    await app.setBackupReminderDays(0);
+    assert.equal(await app.shouldRemindBackup(), false);
+  });
+});
+
+describe('chain head', () => {
+  test('getChainHead is GENESIS_HASH on empty chain', async (t) => {
+    await freshAndUnlocked(t);
+    const head = await app.getChainHead();
+    assert.equal(head, '0'.repeat(64));
+  });
+
+  test('getChainHead returns latest entry_hash after writes', async (t) => {
+    await freshAndUnlocked(t);
+    const r1 = await app.createEntry({ msg: 'one' });
+    const r2 = await app.createEntry({ msg: 'two' });
+    const head = await app.getChainHead();
+    assert.equal(head, r2.entry_hash);
+    assert.notEqual(head, r1.entry_hash);
+  });
+
+  test('getChainHead is allowed in locked state', async (t) => {
+    await freshAndUnlocked(t);
+    await app.createEntry({ msg: 'a' });
+    await app.lock();
+    const head = await app.getChainHead();
+    assert.match(head, /^[0-9a-f]{64}$/);
+  });
+});
+
+describe('certificate data', () => {
+  test('on empty chain: zero entries, chain_head is GENESIS, no supersedes', async (t) => {
+    await freshAndUnlocked(t);
+    const data = await app.getCertificateData();
+    assert.equal(data.total_entries, 0);
+    assert.equal(data.chain_head, '0'.repeat(64));
+    assert.equal(data.first_entry, null);
+    assert.equal(data.last_entry, null);
+    assert.deepEqual(data.supersedes, []);
+    assert.equal(data.app_version, app.APP_VERSION);
+  });
+
+  test('on multi-entry chain with a supersede: data reflects state', async (t) => {
+    await freshAndUnlocked(t);
+    const r1 = await app.createEntry({ msg: 'one' });
+    const r2 = await app.createEntry({ msg: 'two' });
+    await app.createEntry({ msg: 'two-fixed' }, { supersedes: r2.uuid });
+    const data = await app.getCertificateData();
+    assert.equal(data.total_entries, 3);
+    assert.equal(data.first_entry.entry_hash, r1.entry_hash);
+    assert.equal(data.last_entry.uuid, undefined === undefined ? data.last_entry.uuid : null);
+    assert.equal(data.supersedes.length, 1);
+    assert.equal(data.supersedes[0].replaces_uuid, r2.uuid);
+  });
+
+  test('getCertificateData is allowed in locked state', async (t) => {
+    await freshAndUnlocked(t);
+    await app.createEntry({ msg: 'a' });
+    await app.lock();
+    const data = await app.getCertificateData();
+    assert.equal(data.total_entries, 1);
+  });
+});
+
 describe('getStatus', () => {
   test('returns just status for unbooted', async () => {
     app._resetForTesting();

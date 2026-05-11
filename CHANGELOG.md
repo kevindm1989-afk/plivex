@@ -2,6 +2,17 @@
 
 All notable changes to Plivex are recorded here. Versions follow semantic versioning. Each release is also tagged in git.
 
+## [1.14.1] — 2026-05-11
+
+### Fixed
+- **Critical: entry list rendered as empty for everyone.** A temporal-dead-zone reference in `src/ui/screens/entry-list.js` referenced `followUpDueCount` (line 189) before its declaration (line 254). On every render the function threw a `ReferenceError` after appending the topbar and reminder banners, leaving the page looking like the database had been wiped. Bug was introduced in v1.12.0 (PR #23) and has been live since. Fix: hoist `app.listEntries()` and the follow-up-due computation above the banner block; the rest of the render flow is unchanged. The empty-list placeholder, filter bar, and entry rows now render again.
+
+### Changed
+- `APP_VERSION` `1.14.0` → `1.14.1`. `CACHE_VERSION` `plivex-v18` → `plivex-v19`.
+
+### Tests
+- No new tests; existing tests still pass (183/183). This was a UI render-order bug, not a logic or persistence bug — none of the existing tests instantiate the entry-list screen.
+
 ## [1.14.0] — 2026-05-11
 
 ### Added

@@ -529,6 +529,19 @@ function storageSection() {
   ]);
 }
 
+function helpSection(controller) {
+  const btn = Button({
+    label: 'Read the help guide',
+    onClick: () => controller.navigate('help')
+  });
+  return section('Help', [
+    el('p', { class: 'lede' }, [
+      'How Plivex protects your records — passphrase, hash chain, backups, certificate, what happens if your device is taken.'
+    ]),
+    btn
+  ]);
+}
+
 function aboutSection() {
   return section('About', [
     el('dl', { class: 'about-list' }, [
@@ -597,6 +610,7 @@ export function render(root, controller) {
       chainTimestampSection(),
       certificateSection(controller),
       storageSection(),
+      helpSection(controller),
       wipeSection(controller),
       aboutSection()
     ])

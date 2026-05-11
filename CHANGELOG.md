@@ -2,6 +2,18 @@
 
 All notable changes to Plivex are recorded here. Versions follow semantic versioning. Each release is also tagged in git.
 
+## [1.8.0] — 2026-05-11
+
+### Added
+- **In-app help guide.** New `help` screen reachable from Settings → Help. Covers passphrase recovery (there isn't any), entry payload fields, hash chain, verification certificate, supersede semantics, backups + share sheet, auto-lock, what to do if a device is taken, and an explicit "what Plivex does NOT do" section.
+- **Empty-state entry list link.** When the user has zero entries, the "No entries yet" placeholder includes a one-tap link to the help guide so first-run users can orient before writing anything.
+
+### Changed
+- `APP_VERSION` `1.7.0` → `1.8.0`. `CACHE_VERSION` `plivex-v11` → `plivex-v12`. New `./src/ui/screens/help.js` added to `APP_SHELL`.
+
+### Tests
+- No new tests. Help is static content. 180/180 still passing.
+
 ## [1.7.0] — 2026-05-11
 
 ### Added

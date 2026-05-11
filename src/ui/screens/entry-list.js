@@ -167,7 +167,18 @@ export async function render(root, controller) {
   if (entries.length === 0) {
     screen.appendChild(
       el('div', { class: 'empty-state' }, [
-        el('p', {}, ['No entries yet. Tap + to add one.'])
+        el('p', {}, ['No entries yet. Tap + to add one.']),
+        el('p', {}, [
+          el(
+            'button',
+            {
+              type: 'button',
+              class: 'link-button',
+              onClick: () => controller.navigate('help')
+            },
+            ['Read the help guide first']
+          )
+        ])
       ])
     );
     return;

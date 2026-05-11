@@ -1,6 +1,7 @@
 import { el, clear, svgFromString, formatDateTime } from '../dom.js';
 import { Button } from '../components/button.js';
 import { iconGear, iconLock, iconPlus } from '../icons.js';
+import { TEMPLATES } from '../templates.js';
 import * as app from '../../app.js';
 
 function entryTitle(payload) {
@@ -126,6 +127,27 @@ export async function render(root, controller) {
       );
     }
   } catch {}
+
+  // Quick-add templates: one tap → pre-filled entry form. Renders above
+  // the blank-slate compose button so the fast path is the first thing
+  // the user sees on the entry list.
+  const quickAdd = el('div', { class: 'quick-add', attrs: { 'aria-label': 'Quick add' } }, [
+    el('span', { class: 'quick-add-label' }, ['Quick add'])
+  ]);
+  for (const tpl of TEMPLATES) {
+    quickAdd.appendChild(
+      el(
+        'button',
+        {
+          type: 'button',
+          class: 'quick-add-chip',
+          onClick: () => controller.navigate('entry-form', { mode: 'new', template: tpl.id })
+        },
+        [tpl.label]
+      )
+    );
+  }
+  screen.appendChild(quickAdd);
 
   // Compose action.
   const composeBtn = Button({

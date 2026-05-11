@@ -41,6 +41,10 @@ export function render(root, controller) {
         'You can change your passphrase any time in Settings → Change passphrase. The data is re-wrapped on the spot; no re-encryption of every entry is needed.'
       ]),
 
+      section('Quick add', [
+        'The chip row above "New entry" on the entry list provides one-tap presets: Incident, Pay issue, Verbal warning, Schedule, Harassment, Meeting, Conversation, Injury. Each one opens the entry form with the matching type already selected and a partial title pre-filled, so you can start typing details immediately. Use the plain "New entry" button when you want a blank slate.'
+      ]),
+
       section('What an entry can hold', [
         'Each entry has a title and content. You can also add: a type (Schedule, Pay, Safety, Discipline, Harassment, Meeting, Conversation, Injury, Other), a witness name, a location, up to 5 photos (10 MB each), and up to 3 audio clips (25 MB each).',
         'Audio can be recorded directly in the app, or attached from an existing file. Photo bytes are kept as-is — Plivex does not strip EXIF. If a photo carries a capture time or GPS, that metadata is preserved inside the encrypted payload.',

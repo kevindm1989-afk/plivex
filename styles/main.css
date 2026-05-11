@@ -766,6 +766,35 @@ code, .mono {
   min-height: auto;
 }
 
+.date-range {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+.date-range-label {
+  font-size: 0.85rem;
+  color: var(--muted-strong);
+}
+.date-input {
+  background: var(--bg-input);
+  color: var(--fg);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  padding: var(--space-2);
+  font: inherit;
+  font-size: 0.95rem;
+  min-height: 36px;
+  flex: 1 1 8rem;
+  min-width: 8rem;
+  color-scheme: dark;
+}
+.date-input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  border-color: var(--accent);
+}
+
 .month-header {
   margin: var(--space-4) 0 var(--space-2);
   font-size: 0.9rem;

@@ -664,6 +664,115 @@ code, .mono {
   padding-top: var(--space-3);
 }
 
+/* Print view (entry + archive printable layout) -------------------- */
+
+.print-screen {
+  display: flex;
+  flex-direction: column;
+}
+
+.print-doc {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  padding: var(--space-4);
+  border-radius: var(--radius);
+  margin-top: var(--space-3);
+}
+.print-doc-title {
+  margin: 0 0 var(--space-1);
+  font-size: 1.4rem;
+}
+.print-doc-sub {
+  margin: 0 0 var(--space-3);
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+.print-chain-summary {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--space-1) var(--space-3);
+  margin: 0 0 var(--space-4);
+  font-size: 0.9rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: var(--space-3);
+}
+.print-chain-summary dt { color: var(--muted); }
+.print-chain-summary dd { margin: 0; word-break: break-all; }
+
+.print-entry {
+  margin-bottom: var(--space-5);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px dashed var(--border);
+  page-break-inside: avoid;
+}
+.print-entry:last-of-type { border-bottom: none; }
+
+.print-entry-head { margin-bottom: var(--space-2); }
+.print-entry-title {
+  margin: 0 0 var(--space-1);
+  font-size: 1.15rem;
+}
+.print-entry-meta {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+.print-entry-tags {
+  margin: var(--space-1) 0 0;
+  font-size: 0.8rem;
+  color: var(--muted-strong);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.print-meta-line {
+  margin: 0 0 var(--space-1);
+  font-size: 0.95rem;
+  color: var(--muted-strong);
+}
+.print-content {
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin: var(--space-2) 0;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--space-3);
+}
+.print-photos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: var(--space-2);
+  margin: var(--space-2) 0;
+}
+.print-photo {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  break-inside: avoid;
+}
+.print-audio-list {
+  margin: var(--space-2) 0;
+  padding-left: 1.25rem;
+  color: var(--muted-strong);
+  font-size: 0.9rem;
+}
+.print-hash {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--space-1) var(--space-3);
+  margin-top: var(--space-2);
+  font-size: 0.8rem;
+}
+.print-hash dt { color: var(--muted); }
+.print-hash dd { margin: 0; word-break: break-all; }
+.print-doc-footer {
+  margin-top: var(--space-5);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border);
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
 /* Print --------------------------------------------------------------- */
 
 @media print {
@@ -689,6 +798,51 @@ code, .mono {
   .cert-footer { color: #444; border-color: #999; }
   .mono { color: black; }
   .cert-empty { color: #555; }
+
+  /* Print view (per-entry / archive) */
+  .print-doc {
+    background: white;
+    color: black;
+    border: none;
+    padding: 0.5in;
+    border-radius: 0;
+    margin: 0;
+  }
+  .print-doc-title,
+  .print-doc-sub,
+  .print-chain-summary,
+  .print-chain-summary dt,
+  .print-chain-summary dd,
+  .print-entry-title,
+  .print-entry-meta,
+  .print-entry-tags,
+  .print-meta-line,
+  .print-content,
+  .print-audio-list,
+  .print-hash,
+  .print-hash dt,
+  .print-hash dd,
+  .print-doc-footer {
+    color: black;
+  }
+  .print-entry-meta,
+  .print-entry-tags,
+  .print-doc-sub,
+  .print-doc-footer {
+    color: #444;
+  }
+  .print-content {
+    background: white;
+    border: 1px solid #999;
+  }
+  .print-chain-summary,
+  .print-entry,
+  .print-doc-footer {
+    border-color: #999;
+  }
+  .print-photo {
+    border-color: #999;
+  }
 }
 
 /* Type tags + extra entry-detail meta lines ------------------------- */

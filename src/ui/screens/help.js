@@ -67,6 +67,12 @@ export function render(root, controller) {
         'The backup-reminder banner on the entry list nudges you when you haven\'t exported in a while. Cadence is configurable in Settings → Backup reminders (Off / 3 / 7 / 14 / 30 days).'
       ]),
 
+      section('Printing and PDF', [
+        'Open any entry and tap Print to generate a printable single-entry page. Use your browser\'s print dialog to send it to a printer or save it as a PDF.',
+        'Settings → Print archive generates a printable view of every entry, optionally filtered by date. Each entry on the printout includes its hash and the previous-entry hash, plus the current chain head at the top — so the printout itself can be cross-checked against the live chain.',
+        'PDFs are produced by your browser, not by Plivex. Nothing is uploaded; the file stays on your device unless you choose to share it.'
+      ]),
+
       section('Auto-lock', [
         'Plivex locks itself after a period of inactivity (default 15 minutes; configurable 1–60 in Settings → Auto-lock). The timer is wall-clock based, so backgrounding the app or locking your phone does not pause it.',
         'Locking only clears the master key from memory. Your data is never deleted by the auto-lock — it just sits there encrypted until you unlock again.'

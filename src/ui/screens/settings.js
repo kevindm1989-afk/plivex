@@ -99,26 +99,25 @@ function changePassphraseSection(controller) {
   ]);
 }
 
+function buildBackupFilename(backup) {
+  const today = new Date().toISOString().slice(0, 10);
+  const count = backup.entries.length;
+  const head = count > 0 ? backup.entries[count - 1].entry_hash.slice(0, 8) : 'genesis';
+  return `plivex-backup-${today}-${count}entries-${head}.json`;
+}
+
 function exportSection() {
   const status = el('p', { class: 'inline-status', role: 'status' });
-  const btn = Button({
+  const downloadBtn = Button({
     label: 'Download backup',
     onClick: async () => {
       try {
         const backup = await app.exportBackup();
         const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
-        const today = new Date().toISOString().slice(0, 10);
-        const count = backup.entries.length;
-        // Filename includes count and short chain head so two backups can
-        // be told apart at a glance and matched to their chain state.
-        const head =
-          count > 0
-            ? backup.entries[count - 1].entry_hash.slice(0, 8)
-            : 'genesis';
         const a = document.createElement('a');
         a.href = url;
-        a.download = `plivex-backup-${today}-${count}entries-${head}.json`;
+        a.download = buildBackupFilename(backup);
         document.body.appendChild(a);
         a.click();
         a.remove();
@@ -131,13 +130,55 @@ function exportSection() {
       }
     }
   });
-  return section('Export data', [
+
+  const canShare =
+    typeof navigator !== 'undefined' &&
+    typeof navigator.share === 'function' &&
+    typeof navigator.canShare === 'function';
+
+  const shareBtn = Button({
+    label: 'Share backup',
+    variant: 'secondary',
+    onClick: async () => {
+      try {
+        const backup = await app.exportBackup();
+        const json = JSON.stringify(backup, null, 2);
+        const filename = buildBackupFilename(backup);
+        const file = new File([json], filename, { type: 'application/json' });
+        if (!navigator.canShare({ files: [file] })) {
+          status.className = 'inline-status error';
+          status.textContent = 'This browser cannot share files. Use Download instead.';
+          return;
+        }
+        await navigator.share({
+          files: [file],
+          title: 'Plivex backup',
+          text: 'Encrypted Plivex backup'
+        });
+        status.className = 'inline-status success';
+        status.textContent = 'Shared.';
+      } catch (err) {
+        // Web Share rejects with AbortError when the user dismisses the
+        // share sheet — treat as a silent cancellation, not an error.
+        if (err && err.name === 'AbortError') {
+          status.className = 'inline-status';
+          status.textContent = '';
+          return;
+        }
+        status.className = 'inline-status error';
+        status.textContent = `Share failed: ${err.message}`;
+      }
+    }
+  });
+
+  const children = [
     el('p', { class: 'lede' }, [
       'Save an encrypted backup. The backup file requires your current passphrase to decrypt.'
     ]),
-    btn,
+    el('div', { class: 'btn-row' }, canShare ? [downloadBtn, shareBtn] : [downloadBtn]),
     status
-  ]);
+  ];
+  return section('Export data', children);
 }
 
 function backupReminderSection() {
@@ -319,6 +360,7 @@ function importSection(controller) {
 
 function verifySection() {
   const status = el('p', { class: 'inline-status', role: 'status' });
+  const reminderStatus = el('p', { class: 'inline-status', role: 'status' });
   const btn = Button({
     label: 'Verify all entries',
     onClick: async () => {
@@ -341,12 +383,44 @@ function verifySection() {
       btn.disabled = false;
     }
   });
+
+  const reminderSelect = el('select', {
+    id: 'verify-reminder-days',
+    class: 'select',
+    onChange: async (e) => {
+      const days = Number(e.target.value);
+      reminderStatus.className = 'inline-status';
+      reminderStatus.textContent = 'Saving…';
+      try {
+        await app.setVerifyReminderDays(days);
+        reminderStatus.className = 'inline-status success';
+        reminderStatus.textContent =
+          days === 0
+            ? 'Verification reminders disabled.'
+            : `Reminder set: every ${days} day${days === 1 ? '' : 's'}.`;
+      } catch (err) {
+        reminderStatus.className = 'inline-status error';
+        reminderStatus.textContent = `Could not save: ${err.message}`;
+      }
+    }
+  });
+  for (const d of app.ALLOWED_VERIFY_REMINDER_DAYS) {
+    const label = d === 0 ? 'Off' : `Every ${d} day${d === 1 ? '' : 's'}`;
+    reminderSelect.appendChild(el('option', { value: String(d) }, [label]));
+  }
+  app.getVerifyReminderDays().then((d) => {
+    reminderSelect.value = String(d);
+  });
+
   return section('Verify integrity', [
     el('p', { class: 'lede' }, [
       'Recompute the hash chain over your entries and confirm nothing has been tampered with.'
     ]),
     btn,
-    status
+    status,
+    el('label', { for: 'verify-reminder-days', class: 'field-label' }, ['Remind me to verify']),
+    reminderSelect,
+    reminderStatus
   ]);
 }
 

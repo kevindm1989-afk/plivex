@@ -714,6 +714,87 @@ describe('backup reminder', () => {
   });
 });
 
+describe('extended entry payload (type / witness / location)', () => {
+  test('createEntry with type/witness/location round-trips through getEntry', async (t) => {
+    await freshAndUnlocked(t);
+    const payload = {
+      title: 'Late paycheck',
+      content: 'Pay missing $X for shift on Y.',
+      type: 'Pay',
+      witness: 'J. Doe',
+      location: 'Back office'
+    };
+    const r = await app.createEntry(payload);
+    const got = await app.getEntry(r.id);
+    assert.deepEqual(got.payload, payload);
+  });
+
+  test('chain verifies cleanly with mixed-shape payloads (some entries have extra fields, some don\'t)', async (t) => {
+    await freshAndUnlocked(t);
+    await app.createEntry({ title: 'a', content: 'plain' });
+    await app.createEntry({ title: 'b', content: 'with type', type: 'Safety' });
+    await app.createEntry({
+      title: 'c',
+      content: 'all fields',
+      type: 'Harassment',
+      witness: 'someone',
+      location: 'lunchroom'
+    });
+    const result = await app.verifyIntegrity();
+    assert.equal(result.valid, true);
+    assert.equal(result.count, 3);
+  });
+});
+
+describe('verify reminder', () => {
+  test('default cadence is 30 days after fresh initialize', async (t) => {
+    await freshAndUnlocked(t);
+    assert.equal(await app.getVerifyReminderDays(), 30);
+  });
+
+  test('setVerifyReminderDays validates and persists', async (t) => {
+    await freshAndUnlocked(t);
+    await app.setVerifyReminderDays(7);
+    assert.equal(await app.getVerifyReminderDays(), 7);
+    await assert.rejects(() => app.setVerifyReminderDays(15), /not one of/);
+    await assert.rejects(() => app.setVerifyReminderDays(1), /not one of/);
+  });
+
+  test('shouldRemindVerify is true when no verify has happened', async (t) => {
+    await freshAndUnlocked(t);
+    assert.equal(await app.shouldRemindVerify(), true);
+  });
+
+  test('shouldRemindVerify is false immediately after a successful verifyIntegrity', async (t) => {
+    await freshAndUnlocked(t);
+    await app.createEntry({ msg: 'a' });
+    await app.verifyIntegrity();
+    assert.equal(await app.shouldRemindVerify(), false);
+  });
+
+  test('shouldRemindVerify turns true again after the cadence elapses', async (t) => {
+    await freshAndUnlocked(t);
+    let now = 1_700_000_000_000;
+    const restore = app._setClockForTesting(() => now);
+    t.after(restore);
+    app.recordActivity();
+    await app.setVerifyReminderDays(7);
+    await app.verifyIntegrity();
+    now += 6 * 24 * 60 * 60 * 1000;
+    app.recordActivity();
+    assert.equal(await app.shouldRemindVerify(), false);
+    now += 2 * 24 * 60 * 60 * 1000;
+    app.recordActivity();
+    assert.equal(await app.shouldRemindVerify(), true);
+  });
+
+  test('shouldRemindVerify is always false when cadence is 0 (Off)', async (t) => {
+    await freshAndUnlocked(t);
+    await app.setVerifyReminderDays(0);
+    assert.equal(await app.shouldRemindVerify(), false);
+  });
+});
+
 describe('chain head', () => {
   test('getChainHead is GENESIS_HASH on empty chain', async (t) => {
     await freshAndUnlocked(t);

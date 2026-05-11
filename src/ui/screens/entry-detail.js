@@ -49,6 +49,7 @@ export async function render(root, controller, params = {}) {
   ]);
 
   const tags = [];
+  if (entry.payload?.type) tags.push(el('span', { class: 'tag tag-type' }, [entry.payload.type]));
   if (replacement) tags.push(el('span', { class: 'tag tag-muted' }, ['superseded']));
   if (predecessor) tags.push(el('span', { class: 'tag' }, ['edited']));
 
@@ -113,6 +114,18 @@ export async function render(root, controller, params = {}) {
         ]),
         tags.length ? el('div', { class: 'tag-row' }, tags) : null,
         el('p', { class: 'entry-detail-date' }, [formatDateTime(entry.created_at)]),
+        entry.payload?.witness
+          ? el('p', { class: 'entry-detail-meta' }, [
+              el('strong', {}, ['Witness: ']),
+              entry.payload.witness
+            ])
+          : null,
+        entry.payload?.location
+          ? el('p', { class: 'entry-detail-meta' }, [
+              el('strong', {}, ['Location: ']),
+              entry.payload.location
+            ])
+          : null,
         el('div', { class: 'entry-detail-content' }, [entry.payload?.content || '']),
         el('div', { class: 'expandable' }, [verifyToggle, verifyBody])
       ].filter(Boolean))

@@ -2,6 +2,20 @@
 
 All notable changes to Plivex are recorded here. Versions follow semantic versioning. Each release is also tagged in git.
 
+## [1.4.0] — 2026-05-11
+
+### Added
+- **Entry type field.** Optional categorization on each entry, selectable from a fixed list (Schedule / Pay / Safety / Discipline / Harassment / Meeting / Conversation / Injury / Other). Persisted as `type` on the entry payload. Shown as a tag on entry rows and on entry detail.
+- **Optional witness and location fields** on the entry form. Persisted as `witness` and `location` on the entry payload. Shown on entry detail when present. Hash chain handles new payload shapes automatically (canonical JSON sorts new keys; old entries verify unchanged).
+- **Share-sheet export.** Settings → Export now offers a "Share backup" button alongside "Download backup" when the browser supports `navigator.share` with files. Uses the OS share sheet so the user can hand the file to any installed app without Plivex touching a third-party service. AbortError (user-dismissed sheet) is treated as silent cancel.
+- **Verify-integrity reminder.** New section in Settings → Verify integrity: cadence select with Off / 7 / 30 / 90 days (default: 30). Banner on the entry list when the cadence has elapsed since the last successful verify. `verifyIntegrity()` writes `last_verified_at` on success. `app.shouldRemindVerify()`, `app.getVerifyReminderDays()`, `app.setVerifyReminderDays()`, `app.getLastVerifiedAt()`.
+
+### Changed
+- `APP_VERSION` `1.3.0` → `1.4.0`. `CACHE_VERSION` `plivex-v7` → `plivex-v8`.
+
+### Tests
+- 8 new tests (6 verify-reminder + 2 extended-payload round-trip + chain verification across mixed payloads). 178 total passing.
+
 ## [1.3.0] — 2026-05-11
 
 ### Added

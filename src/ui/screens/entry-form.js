@@ -5,6 +5,19 @@ import { confirmDialog } from '../components/dialog.js';
 import { iconBack, iconCheck } from '../icons.js';
 import * as app from '../../app.js';
 
+export const ENTRY_TYPES = [
+  '',
+  'Schedule',
+  'Pay',
+  'Safety',
+  'Discipline',
+  'Harassment',
+  'Meeting',
+  'Conversation',
+  'Injury',
+  'Other'
+];
+
 export async function render(root, controller, params = {}) {
   clear(root);
 
@@ -16,10 +29,32 @@ export async function render(root, controller, params = {}) {
 
   let title = original?.payload?.title ?? '';
   let content = original?.payload?.content ?? '';
+  let type = original?.payload?.type ?? '';
+  let witness = original?.payload?.witness ?? '';
+  let location = original?.payload?.location ?? '';
   let dirty = false;
   let busy = false;
 
   const errorEl = el('p', { class: 'screen-error', role: 'alert' });
+
+  // Type select (optional categorization).
+  const typeSelect = el('select', {
+    id: 'entry-type',
+    class: 'select',
+    onChange: (e) => {
+      type = e.target.value;
+      dirty = true;
+    }
+  });
+  for (const t of ENTRY_TYPES) {
+    const label = t === '' ? '(no type)' : t;
+    typeSelect.appendChild(el('option', { value: t }, [label]));
+  }
+  typeSelect.value = type;
+  const typeField = el('div', { class: 'field' }, [
+    el('label', { for: 'entry-type', class: 'field-label' }, ['Type (optional)']),
+    typeSelect
+  ]);
 
   const titleField = Input({
     label: 'Title',
@@ -39,6 +74,25 @@ export async function render(root, controller, params = {}) {
       content = v;
       dirty = true;
       updateSave();
+    }
+  });
+
+  const witnessField = Input({
+    label: 'Witness (optional)',
+    value: witness,
+    autocomplete: 'off',
+    onInput: (v) => {
+      witness = v;
+      dirty = true;
+    }
+  });
+  const locationField = Input({
+    label: 'Location (optional)',
+    value: location,
+    autocomplete: 'off',
+    onInput: (v) => {
+      location = v;
+      dirty = true;
     }
   });
 
@@ -66,8 +120,12 @@ export async function render(root, controller, params = {}) {
     saveBtn.disabled = true;
     errorEl.textContent = '';
     try {
+      const payload = { title, content };
+      if (type) payload.type = type;
+      if (witness) payload.witness = witness;
+      if (location) payload.location = location;
       const options = mode === 'edit' && original ? { supersedes: original.uuid } : undefined;
-      await app.createEntry({ title, content }, options);
+      await app.createEntry(payload, options);
       dirty = false;
       controller.navigate('entry-list');
     } catch (err) {
@@ -105,8 +163,11 @@ export async function render(root, controller, params = {}) {
     onSubmit: (e) => { e.preventDefault(); submit(); }
   }, [
     topbar,
+    typeField,
     titleField.wrap,
     contentField.wrap,
+    witnessField.wrap,
+    locationField.wrap,
     errorEl
   ]);
 

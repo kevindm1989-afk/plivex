@@ -690,3 +690,17 @@ code, .mono {
   .mono { color: black; }
   .cert-empty { color: #555; }
 }
+
+/* Type tags + extra entry-detail meta lines ------------------------- */
+
+.tag-type {
+  background: rgba(106, 168, 255, 0.12);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.entry-detail-meta {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--muted-strong);
+}

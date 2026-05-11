@@ -7,6 +7,10 @@ function photoDataUrl(photo) {
   return `data:${photo.type || 'image/jpeg'};base64,${photo.dataB64}`;
 }
 
+function audioDataUrl(audio) {
+  return `data:${audio.type || 'audio/webm'};base64,${audio.dataB64}`;
+}
+
 function openPhotoOverlay(photo) {
   const overlay = el(
     'div',
@@ -185,6 +189,22 @@ export async function render(root, controller, params = {}) {
                     })
                   ]
                 )
+              )
+            )
+          : null,
+        Array.isArray(entry.payload?.audio) && entry.payload.audio.length > 0
+          ? el(
+              'div',
+              { class: 'audio-list', attrs: { 'aria-label': 'Audio clips' } },
+              entry.payload.audio.map((a, i) =>
+                el('div', { class: 'audio-row' }, [
+                  el('audio', {
+                    controls: true,
+                    src: audioDataUrl(a),
+                    attrs: { preload: 'metadata' }
+                  }),
+                  el('span', { class: 'audio-name' }, [a.name || `clip ${i + 1}`])
+                ])
               )
             )
           : null,

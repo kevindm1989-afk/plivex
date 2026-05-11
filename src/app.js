@@ -365,7 +365,7 @@ export async function getStatus() {
   return { status: _status };
 }
 
-export const APP_VERSION = '1.8.0';
+export const APP_VERSION = '1.9.0';
 
 // Browser storage usage / quota. Returns null when the platform does not
 // expose StorageManager.estimate (Safari < 17, some embedded webviews).

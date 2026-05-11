@@ -322,6 +322,11 @@ export async function render(root, controller) {
                   `${entry.payload.photos.length} photo${entry.payload.photos.length === 1 ? '' : 's'}`
                 ])
               : null,
+            Array.isArray(entry.payload?.audio) && entry.payload.audio.length > 0
+              ? el('span', { class: 'tag tag-audio' }, [
+                  `${entry.payload.audio.length} audio`
+                ])
+              : null,
             isSuperseded ? el('span', { class: 'tag tag-muted' }, ['superseded']) : null,
             isEdit ? el('span', { class: 'tag' }, ['edited']) : null
           ].filter(Boolean)

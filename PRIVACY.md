@@ -1,6 +1,6 @@
 # Privacy Policy
 
-**Last updated:** 2026-05-11 (v1.6.0)
+**Last updated:** 2026-05-11 (v1.9.0)
 
 ## Plain language summary
 
@@ -90,3 +90,11 @@ Entries can include photo attachments (up to 5 per entry, 10 MB each). Photos ar
 Photos are stored with their original bytes — Plivex does not re-encode them or strip metadata. If a photo's EXIF metadata contains GPS coordinates, device identifiers, or capture timestamps, those values are preserved inside the encrypted payload. Anyone with access to your passphrase can read them; without it, the bytes are encrypted at rest like everything else.
 
 Plivex never uploads photos anywhere, never extracts EXIF for any purpose, and never sends photos through any third-party service.
+
+## Audio attachments
+
+Entries can include audio clips (up to 3 per entry, 25 MB each). Audio is stored inside the same encrypted payload as the entry text, using the same AES-GCM key. Like photos, audio is covered by the hash chain and included in backup exports.
+
+Recording uses your browser's microphone via `getUserMedia`, which prompts you for permission the first time. The audio stream is captured locally by your browser, stored encrypted, and never transmitted off your device. Plivex does not analyze, transcribe, or process audio content in any way — it only stores the raw bytes you record or upload.
+
+Whether recording a particular conversation is legal depends on your jurisdiction and the parties involved. Plivex provides the technical capability; the legal responsibility is yours.

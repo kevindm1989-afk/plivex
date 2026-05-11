@@ -42,8 +42,9 @@ export function render(root, controller) {
       ]),
 
       section('What an entry can hold', [
-        'Each entry has a title and content. You can also add: a type (Schedule, Pay, Safety, Discipline, Harassment, Meeting, Conversation, Injury, Other), a witness name, a location, and up to 5 photos (10 MB each).',
-        'Original photo bytes are kept as-is — Plivex does not strip EXIF. If a photo carries a capture time or GPS, that metadata is preserved inside the encrypted payload.'
+        'Each entry has a title and content. You can also add: a type (Schedule, Pay, Safety, Discipline, Harassment, Meeting, Conversation, Injury, Other), a witness name, a location, up to 5 photos (10 MB each), and up to 3 audio clips (25 MB each).',
+        'Audio can be recorded directly in the app, or attached from an existing file. Photo bytes are kept as-is — Plivex does not strip EXIF. If a photo carries a capture time or GPS, that metadata is preserved inside the encrypted payload.',
+        'Recording requires microphone permission from your browser the first time. Whether or not recording a particular conversation is legal depends on where you are and who is speaking — check your jurisdiction\'s rules before relying on it.'
       ]),
 
       section('The hash chain (tamper evidence)', [

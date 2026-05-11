@@ -945,6 +945,106 @@ body.overlay-open {
   overflow: hidden;
 }
 
+/* Audio attachments ------------------------------------------------- */
+
+.audio-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.audio-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: var(--space-2) 0;
+}
+
+.audio-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  padding: var(--space-2);
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.audio-row audio {
+  flex: 1 1 14rem;
+  min-width: 0;
+  height: 36px;
+}
+.audio-name {
+  flex: 1 1 100%;
+  font-size: 0.8rem;
+  color: var(--muted);
+  word-break: break-all;
+}
+.audio-remove {
+  background: transparent;
+  color: var(--danger);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  padding: 0.25rem 0.6rem;
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+  min-height: 36px;
+}
+.audio-remove:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.audio-recorder {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.audio-recorder-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+.audio-recorder-status {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+  min-height: 1.2em;
+}
+.audio-recorder-status.warn {
+  color: var(--danger);
+}
+.audio-recorder-fallback {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.audio-indicator {
+  color: var(--danger);
+  font-size: 1.1rem;
+  animation: pulse 1s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+.audio-elapsed {
+  font-variant-numeric: tabular-nums;
+  font-size: 1rem;
+  color: var(--fg);
+  min-width: 3.5rem;
+}
+
+.tag-audio {
+  color: var(--success);
+  border-color: var(--success);
+  background: rgba(110, 231, 167, 0.08);
+}
+
 /* Storage usage panel ----------------------------------------------- */
 
 .storage-usage {

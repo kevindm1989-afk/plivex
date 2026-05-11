@@ -7,6 +7,7 @@ import * as entryForm from './screens/entry-form.js';
 import * as entryDetail from './screens/entry-detail.js';
 import * as settings from './screens/settings.js';
 import * as certificate from './screens/certificate.js';
+import * as help from './screens/help.js';
 
 const isStandalone = () =>
   window.matchMedia('(display-mode: standalone)').matches ||
@@ -62,6 +63,9 @@ async function draw() {
   }
   if (currentScreen === 'certificate') {
     return certificate.render(root, controller);
+  }
+  if (currentScreen === 'help') {
+    return help.render(root, controller);
   }
   return entryList.render(root, controller);
 }

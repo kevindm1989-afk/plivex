@@ -954,3 +954,38 @@ body.overlay-open {
 }
 .storage-usage-warn { color: #d4a04a; }
 .storage-usage-danger { color: var(--danger); }
+
+/* Help screen ------------------------------------------------------- */
+
+.help {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.help-section {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--space-3) var(--space-4);
+}
+.help-heading {
+  margin: 0 0 var(--space-2);
+  font-size: 1rem;
+  color: var(--accent);
+  font-weight: 600;
+}
+.help-section p {
+  margin: 0 0 var(--space-2);
+  color: var(--muted-strong);
+}
+.help-section p:last-child {
+  margin-bottom: 0;
+}
+.help-list {
+  margin: 0 0 var(--space-2);
+  padding-left: 1.25rem;
+  color: var(--muted-strong);
+}
+.help-list li {
+  margin-bottom: var(--space-1);
+}

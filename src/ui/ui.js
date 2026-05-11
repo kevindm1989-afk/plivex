@@ -8,6 +8,7 @@ import * as entryDetail from './screens/entry-detail.js';
 import * as settings from './screens/settings.js';
 import * as certificate from './screens/certificate.js';
 import * as help from './screens/help.js';
+import * as printView from './screens/print-view.js';
 
 const isStandalone = () =>
   window.matchMedia('(display-mode: standalone)').matches ||
@@ -66,6 +67,9 @@ async function draw() {
   }
   if (currentScreen === 'help') {
     return help.render(root, controller);
+  }
+  if (currentScreen === 'print-view') {
+    return printView.render(root, controller, currentParams);
   }
   return entryList.render(root, controller);
 }

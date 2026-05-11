@@ -77,6 +77,11 @@ export async function render(root, controller, params = {}) {
     icon: svgFromString(iconEdit()),
     onClick: () => controller.navigate('entry-form', { mode: 'edit', id: entry.id })
   });
+  const printBtn = Button({
+    label: 'Print',
+    variant: 'secondary',
+    onClick: () => controller.navigate('print-view', { mode: 'single', id: entry.id })
+  });
 
   const topbar = el('header', { class: 'topbar' }, [
     el('button', {
@@ -86,7 +91,7 @@ export async function render(root, controller, params = {}) {
       onClick: () => controller.navigate('entry-list')
     }, [svgFromString(iconBack())]),
     el('h1', { class: 'topbar-title' }, ['Entry']),
-    el('div', { class: 'topbar-actions' }, [editBtn])
+    el('div', { class: 'topbar-actions' }, [printBtn, editBtn])
   ]);
 
   const tags = [];

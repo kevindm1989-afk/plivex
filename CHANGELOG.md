@@ -2,6 +2,20 @@
 
 All notable changes to Plivex are recorded here. Versions follow semantic versioning. Each release is also tagged in git.
 
+## [1.10.0] — 2026-05-11
+
+### Added
+- **Print / Save-as-PDF, single entry.** New "Print" button on entry detail. Opens a print-view screen rendered with `@media print` styles and a `window.print()` trigger. Includes hashes, timestamps, photo embeds, and audio file references.
+- **Print archive.** New "Print archive" section in Settings with optional date-range inputs. Opens a print view containing every entry (or every entry within the chosen range), each with its own hash block. The document header shows the current chain head, total entry count, and (when filtered) the date range — so the printout is independently verifiable against the live chain.
+- New `src/ui/screens/print-view.js` registered as the `print-view` route.
+
+### Changed
+- `APP_VERSION` `1.9.0` → `1.10.0`. `CACHE_VERSION` `plivex-v13` → `plivex-v14`. New `./src/ui/screens/print-view.js` added to `APP_SHELL`.
+- Help screen: new "Printing and PDF" section.
+
+### Tests
+- No new tests. Print rendering is pure UI; the underlying `listEntries`, `getEntry`, and `getCertificateData` already have coverage. 181/181 still passing.
+
 ## [1.9.0] — 2026-05-11
 
 ### Added

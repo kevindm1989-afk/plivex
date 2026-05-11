@@ -529,6 +529,42 @@ function storageSection() {
   ]);
 }
 
+function printArchiveSection(controller) {
+  let from = '';
+  let to = '';
+  const fromInput = el('input', {
+    type: 'date',
+    id: 'print-from',
+    class: 'date-input',
+    attrs: { 'aria-label': 'From date' },
+    onInput: (e) => { from = e.target.value; }
+  });
+  const toInput = el('input', {
+    type: 'date',
+    id: 'print-to',
+    class: 'date-input',
+    attrs: { 'aria-label': 'To date' },
+    onInput: (e) => { to = e.target.value; }
+  });
+  const btn = Button({
+    label: 'Open print preview',
+    onClick: () => controller.navigate('print-view', { mode: 'archive', from, to })
+  });
+  return section('Print archive', [
+    el('p', { class: 'lede' }, [
+      'Generate a printable view of your entries. Use it to hand records to HR, a lawyer, or to file in a physical folder. The print preview includes hashes for each entry so the printout itself is verifiable against the chain.'
+    ]),
+    el('p', { class: 'field-label' }, ['Optional date range:']),
+    el('div', { class: 'date-range' }, [
+      el('label', { for: 'print-from', class: 'date-range-label' }, ['From']),
+      fromInput,
+      el('label', { for: 'print-to', class: 'date-range-label' }, ['To']),
+      toInput
+    ]),
+    btn
+  ]);
+}
+
 function helpSection(controller) {
   const btn = Button({
     label: 'Read the help guide',
@@ -609,6 +645,7 @@ export function render(root, controller) {
       verifySection(),
       chainTimestampSection(),
       certificateSection(controller),
+      printArchiveSection(controller),
       storageSection(),
       helpSection(controller),
       wipeSection(controller),

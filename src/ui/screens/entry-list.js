@@ -265,6 +265,11 @@ export async function render(root, controller) {
             entry.payload?.type
               ? el('span', { class: 'tag tag-type' }, [entry.payload.type])
               : null,
+            Array.isArray(entry.payload?.photos) && entry.payload.photos.length > 0
+              ? el('span', { class: 'tag tag-photos' }, [
+                  `${entry.payload.photos.length} photo${entry.payload.photos.length === 1 ? '' : 's'}`
+                ])
+              : null,
             isSuperseded ? el('span', { class: 'tag tag-muted' }, ['superseded']) : null,
             isEdit ? el('span', { class: 'tag' }, ['edited']) : null
           ].filter(Boolean)

@@ -1,6 +1,6 @@
 # Privacy Policy
 
-**Last updated:** 2026-05-10 (v1.2.0)
+**Last updated:** 2026-05-11 (v1.6.0)
 
 ## Plain language summary
 
@@ -82,3 +82,11 @@ Auto-lock only clears the master key from the app's working memory. It does not 
 Plivex uses semantic HTML elements, ARIA roles where applicable, and visible focus indicators on all interactive elements. All buttons that display only an icon include a text label for assistive technology. Touch targets are at least 44 pixels in their smallest dimension. Dialogs trap keyboard focus while open.
 
 Plivex does not claim formal compliance with any accessibility standard such as WCAG, ADA, or AODA. The above describes properties of the code as written; if you encounter accessibility issues, please file an issue on the project's GitHub repository.
+
+## Photo attachments
+
+Entries can include photo attachments (up to 5 per entry, 10 MB each). Photos are stored inside the same encrypted payload as the entry text, using the same AES-GCM key. They are covered by the hash chain like every other field, and they are included automatically in backup exports.
+
+Photos are stored with their original bytes — Plivex does not re-encode them or strip metadata. If a photo's EXIF metadata contains GPS coordinates, device identifiers, or capture timestamps, those values are preserved inside the encrypted payload. Anyone with access to your passphrase can read them; without it, the bytes are encrypted at rest like everything else.
+
+Plivex never uploads photos anywhere, never extracts EXIF for any purpose, and never sends photos through any third-party service.

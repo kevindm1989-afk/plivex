@@ -2,6 +2,23 @@
 
 All notable changes to Plivex are recorded here. Versions follow semantic versioning. Each release is also tagged in git.
 
+## [1.6.0] — 2026-05-11
+
+### Added
+- **Photo attachments on entries.** Up to 5 photos per entry, 10 MB each. Selected via file picker (which surfaces the camera on mobile). Photos are stored base64-encoded inside the encrypted entry payload, so they are covered by the hash chain and included in every backup export. Original bytes are preserved — Plivex does not re-encode or strip EXIF.
+- **Photo gallery on entry detail.** Thumbnails laid out in a responsive grid; tap any thumbnail to view full-size in an overlay. Escape or tap outside to close.
+- **Photo count tag** on entry list rows that have photos (e.g., "3 photos").
+- **Storage panel in Settings.** Shows current usage and quota via `navigator.storage.estimate()` (where supported), with text color shifting at 70% and 90% usage thresholds. Refresh button to re-check on demand. `app.getStorageEstimate()`.
+
+### Changed
+- `APP_VERSION` `1.5.0` → `1.6.0`. `CACHE_VERSION` `plivex-v9` → `plivex-v10`.
+
+### Privacy
+- `PRIVACY.md` updated: photos are stored encrypted alongside text, EXIF preserved, never uploaded.
+
+### Tests
+- 2 new tests: round-trip an entry with photos through encrypt/decrypt; chain verification across mixed photo/no-photo entries. 180 total passing.
+
 ## [1.5.0] — 2026-05-11
 
 ### Added

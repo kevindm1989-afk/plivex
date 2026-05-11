@@ -4,6 +4,7 @@ import { Button } from '../components/button.js';
 import { confirmDialog } from '../components/dialog.js';
 import { AudioRecorder } from '../components/audio-recorder.js';
 import { iconBack, iconCheck } from '../icons.js';
+import { getTemplate } from '../templates.js';
 import * as app from '../../app.js';
 
 export const ENTRY_TYPES = [
@@ -67,9 +68,13 @@ export async function render(root, controller, params = {}) {
     original = await app.getEntry(params.id);
   }
 
-  let title = original?.payload?.title ?? '';
+  // For new entries, optional template seeds title/type. Edit mode
+  // always wins over template prefill.
+  const template = mode === 'new' && params.template ? getTemplate(params.template) : null;
+
+  let title = original?.payload?.title ?? (template?.titlePrefix ?? '');
   let content = original?.payload?.content ?? '';
-  let type = original?.payload?.type ?? '';
+  let type = original?.payload?.type ?? (template?.type ?? '');
   let witness = original?.payload?.witness ?? '';
   let location = original?.payload?.location ?? '';
   let photos = Array.isArray(original?.payload?.photos)

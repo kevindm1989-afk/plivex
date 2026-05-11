@@ -207,6 +207,42 @@ code, .mono {
   margin: var(--space-3) 0;
 }
 
+/* Quick-add chip row ---------------------------------------------- */
+
+.quick-add {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  align-items: center;
+  margin: var(--space-3) 0 var(--space-1);
+}
+.quick-add-label {
+  font-size: 0.8rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-right: var(--space-1);
+}
+.quick-add-chip {
+  background: var(--bg-input);
+  color: var(--accent);
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  padding: 0.3rem 0.7rem;
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+  min-height: 36px;
+}
+.quick-add-chip:hover {
+  border-color: var(--accent);
+  background: rgba(106, 168, 255, 0.10);
+}
+.quick-add-chip:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 /* Fields --------------------------------------------------------------- */
 
 .field {

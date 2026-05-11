@@ -2,6 +2,19 @@
 
 All notable changes to Plivex are recorded here. Versions follow semantic versioning. Each release is also tagged in git.
 
+## [1.11.0] — 2026-05-11
+
+### Added
+- **Quick-add templates.** Chip row above the "New entry" button on the entry list: Incident, Pay issue, Verbal warning, Schedule, Harassment, Meeting, Conversation, Injury. Tapping a chip opens the entry form with the matching type pre-selected and a partial title (e.g., "Incident: ") already in place. Designed for capture-in-the-moment — fewer taps when something just happened.
+- New `src/ui/templates.js` module owning the preset list.
+- Help screen: new "Quick add" section.
+
+### Changed
+- `APP_VERSION` `1.10.0` → `1.11.0`. `CACHE_VERSION` `plivex-v14` → `plivex-v15`. New `./src/ui/templates.js` added to `APP_SHELL`.
+
+### Tests
+- No new tests. Templates are a UI prefill layer; entry-form's persistence path is already covered. 181/181 still passing.
+
 ## [1.10.0] — 2026-05-11
 
 ### Added

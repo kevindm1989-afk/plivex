@@ -50,6 +50,23 @@ function entryMatchesDateRange(entry, from, to) {
   return true;
 }
 
+function todayISO() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function followUpStatus(entry, supersededUuids) {
+  const due = entry.payload?.followUpDate;
+  if (!due || typeof due !== 'string') return null;
+  if (supersededUuids.has(entry.uuid)) return null;
+  const today = todayISO();
+  if (due < today) {
+    const days = Math.floor((Date.parse(today) - Date.parse(due)) / (24 * 60 * 60 * 1000));
+    return { kind: 'overdue', label: `Overdue ${days}d`, date: due };
+  }
+  if (due === today) return { kind: 'due', label: 'Due today', date: due };
+  return { kind: 'future', label: `Follow-up ${due}`, date: due };
+}
+
 export async function render(root, controller) {
   clear(root);
 
@@ -128,6 +145,16 @@ export async function render(root, controller) {
     }
   } catch {}
 
+  if (followUpDueCount > 0) {
+    screen.appendChild(
+      el('div', { class: 'reminder-banner reminder-banner-warn', role: 'status' }, [
+        el('span', { class: 'reminder-message' }, [
+          `${followUpDueCount} entr${followUpDueCount === 1 ? 'y' : 'ies'} need follow-up.`
+        ])
+      ])
+    );
+  }
+
   // Quick-add templates: one tap → pre-filled entry form. Renders above
   // the blank-slate compose button so the fast path is the first thing
   // the user sees on the entry list.
@@ -181,6 +208,14 @@ export async function render(root, controller) {
   for (const e of entries) {
     if (e.supersedes) supersededUuids.add(e.supersedes);
   }
+
+  // Count follow-ups that are due today or overdue (non-superseded only).
+  let followUpDueCount = 0;
+  for (const e of entries) {
+    const s = followUpStatus(e, supersededUuids);
+    if (s && (s.kind === 'due' || s.kind === 'overdue')) followUpDueCount++;
+  }
+
   entries.reverse();
 
   listEl.removeAttribute('aria-busy');
@@ -317,6 +352,7 @@ export async function render(root, controller) {
   function entryRow(entry) {
     const isSuperseded = supersededUuids.has(entry.uuid);
     const isEdit = entry.supersedes !== undefined;
+    const fu = followUpStatus(entry, supersededUuids);
     return el(
       'li',
       {
@@ -338,6 +374,9 @@ export async function render(root, controller) {
             el('h3', { class: 'entry-row-title' }, [entryTitle(entry.payload)]),
             entry.payload?.type
               ? el('span', { class: 'tag tag-type' }, [entry.payload.type])
+              : null,
+            fu
+              ? el('span', { class: `tag tag-followup tag-followup-${fu.kind}` }, [fu.label])
               : null,
             Array.isArray(entry.payload?.photos) && entry.payload.photos.length > 0
               ? el('span', { class: 'tag tag-photos' }, [

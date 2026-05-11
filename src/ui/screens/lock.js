@@ -35,7 +35,7 @@ export function render(root, controller) {
       return;
     }
     busy = false;
-    errorEl.textContent = 'Passphrase is incorrect.';
+    errorEl.textContent = 'Passphrase did not match. Plivex has no recovery — there are no failed-attempt limits, no email reset, no developer override.';
     pass = '';
     passInput.input.value = '';
     passInput.input.focus();
@@ -74,6 +74,18 @@ export function render(root, controller) {
     errorEl,
     unlockBtn,
     el('div', { class: 'screen-footer' }, [
+      el('details', { class: 'lock-recovery' }, [
+        el('summary', {}, ['How recovery works']),
+        el('p', { class: 'lede small' }, [
+          'Plivex has no passphrase recovery. The encryption key is derived from your passphrase, so without it the encrypted data cannot be decrypted by anyone — including the developer.'
+        ]),
+        el('p', { class: 'lede small' }, [
+          'If you have an exported backup file, you can wipe this install and import the backup on the next install. The same passphrase that wrapped the backup is still required.'
+        ]),
+        el('p', { class: 'lede small' }, [
+          'If you have no backup and have lost the passphrase, the only path forward is to wipe and start fresh.'
+        ])
+      ]),
       el('button', {
         type: 'button',
         class: 'link-button danger-link',

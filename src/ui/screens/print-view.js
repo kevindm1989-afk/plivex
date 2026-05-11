@@ -56,6 +56,14 @@ function renderEntry(entry, supersededUuids) {
       ])
     );
   }
+  if (entry.payload?.followUpDate) {
+    children.push(
+      el('p', { class: 'print-meta-line' }, [
+        el('strong', {}, ['Follow up by: ']),
+        entry.payload.followUpDate
+      ])
+    );
+  }
 
   if (entry.payload?.content) {
     children.push(el('div', { class: 'print-content' }, [entry.payload.content]));

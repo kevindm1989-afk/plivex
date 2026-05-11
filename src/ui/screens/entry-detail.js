@@ -172,6 +172,12 @@ export async function render(root, controller, params = {}) {
               entry.payload.location
             ])
           : null,
+        entry.payload?.followUpDate
+          ? el('p', { class: 'entry-detail-meta' }, [
+              el('strong', {}, ['Follow up by: ']),
+              entry.payload.followUpDate
+            ])
+          : null,
         el('div', { class: 'entry-detail-content' }, [entry.payload?.content || '']),
         Array.isArray(entry.payload?.photos) && entry.payload.photos.length > 0
           ? el(

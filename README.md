@@ -16,11 +16,47 @@ Plivex is a Progressive Web App (PWA) that lets you keep dated, structured notes
 
 ## How it works
 
-- **Local-only storage.** Your data lives in your browser's local storage on your device. The app cannot transmit it anywhere.
-- **Tamper-evident entries.** Each entry is cryptographically chained to the previous one. Edits create new records that supersede old ones rather than overwriting them.
-- **Encrypted at rest.** Data is encrypted using a key derived from a passphrase you set. Lose the passphrase and the data cannot be recovered — by you, by me, by anyone.
+- **Local-only storage.** Your data lives in your browser's local storage (IndexedDB) on your device. The app cannot transmit it anywhere.
+- **Tamper-evident entries.** Each entry is cryptographically chained to the previous one with SHA-256. Edits create new records that supersede old ones rather than overwriting them, so the chain shows the full history.
+- **Encrypted at rest.** Entries (including photos and audio) are encrypted with AES-GCM. The encryption key is derived from a passphrase you set, via PBKDF2-HMAC-SHA-256 at 600,000 iterations (OWASP 2024 guidance). Lose the passphrase and the data cannot be recovered — by you, by me, by anyone.
 - **No accounts.** There is no sign-up, no login, no email, no identifier of any kind tied to you.
 - **No telemetry.** The app does not phone home. There are no analytics, no crash reporting, no remote configuration.
+- **No third-party services.** No fonts, scripts, or images load from any external service. The CSP enforces this at runtime.
+
+## Features
+
+**Entries**
+- Title, content, optional type (Schedule / Pay / Safety / Discipline / Harassment / Meeting / Conversation / Injury / Other), optional witness, optional location
+- Up to 5 photos per entry (10 MB each). Original bytes preserved — EXIF is not stripped.
+- Up to 3 audio clips per entry (25 MB each). Record in-app via `MediaRecorder` or attach an existing file.
+- Quick-add templates above "New entry" for one-tap capture (Incident, Pay issue, Verbal warning, Schedule, Harassment, Meeting, Conversation, Injury).
+
+**Finding and reviewing**
+- Search across title, content, witness, location, and type
+- Type filter chips (auto-populated from your existing entries)
+- Date-range filter (From / To)
+- Month grouping with year-month headers
+- Print preview for any single entry or a date-scoped archive — your browser's print dialog produces the PDF.
+
+**Integrity**
+- "Verify integrity" recomputes the entire hash chain
+- Verification certificate: a printable one-page summary (chain head, total entries, supersede history, signature lines)
+- Chain timestamping panel: copy the current chain head to anchor against OpenTimestamps or similar (you submit it yourself; Plivex never sends anything)
+- Verification-reminder cadence (Off / 7 / 30 / 90 days)
+
+**Security**
+- Wall-clock auto-lock (1 / 5 / 15 / 30 / 60 minutes, default 15)
+- Change passphrase (re-wraps the master key; entries aren't re-encrypted)
+- Wipe — type-to-confirm; permanent and unrecoverable
+
+**Backup and restore**
+- Download backup → JSON file containing your encrypted entries plus the wrapped key. Filename includes the entry count and the first 8 hex chars of the chain head.
+- Share backup → OS share sheet (where supported) — hand the file to your cloud drive, email, AirDrop, etc.
+- Import → atomic, single-transaction replace. Failures roll back to empty.
+- Backup-reminder cadence (Off / 3 / 7 / 14 / 30 days)
+
+**Help**
+- Built-in help screen accessible from Settings → Help, covering passphrase recovery (none), payload fields, hash chain, certificate, supersede semantics, backups, auto-lock, device-taken scenarios, and printing.
 
 ## Installing
 
@@ -34,7 +70,24 @@ The app will not function reliably as a regular bookmark. Installation to the ho
 
 ## Backing up your data
 
-Because everything is local, **uninstalling the app or clearing your browser data will permanently delete your entries.** The app provides an export function — use it regularly. Save the exported file to your own personal cloud (iCloud, Google Drive, etc.) or another device you control. Backup is your responsibility; nothing in this app does it for you.
+Because everything is local, **uninstalling the app or clearing your browser data will permanently delete your entries.** The app provides Download and Share backup options — use them regularly. Save the exported file to your own personal cloud (iCloud, Google Drive, etc.) or another device you control. Backup is your responsibility; nothing in this app does it for you.
+
+The entry list shows a reminder banner when you haven't exported in a while (cadence configurable in Settings).
+
+## Architecture
+
+No framework, no bundler, no transpilation. The source in this repository is exactly what runs in your browser.
+
+- `index.html` — the only HTML file. CSP set via `<meta>`.
+- `sw.js` — service worker. Cache-first with network fallback over same-origin GETs.
+- `src/crypto.js` — PBKDF2 + AES-GCM, passphrase strength heuristic.
+- `src/storage.js` — IndexedDB wrapper (via vendored `idb`), two-layer key wrap.
+- `src/chain.js` — SHA-256 hash chain with strict canonical JSON.
+- `src/app.js` — orchestration: state machine, auto-lock, backups, reminders, certificate data.
+- `src/ui/` — screens and components. Pure DOM, no virtual DOM.
+- `tests/` — Node's built-in `node:test`. 181 tests across crypto, storage, chain, app, button, dialog.
+
+Run the tests with `npm test` (Node ≥ 20).
 
 ## Privacy and terms
 

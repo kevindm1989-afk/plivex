@@ -537,6 +537,19 @@ function storageSection() {
   ]);
 }
 
+function statsSection(controller) {
+  const btn = Button({
+    label: 'Open statistics',
+    onClick: () => controller.navigate('stats')
+  });
+  return section('Statistics', [
+    el('p', { class: 'lede' }, [
+      'Counts and breakdowns of your entries by type and month, follow-up status, attachment totals, and storage usage. All computation runs locally on already-decrypted entries.'
+    ]),
+    btn
+  ]);
+}
+
 function printArchiveSection(controller) {
   let from = '';
   let to = '';
@@ -659,7 +672,8 @@ export function render(root, controller) {
         verifySection(),
         chainTimestampSection(),
         certificateSection(controller),
-        printArchiveSection(controller)
+        printArchiveSection(controller),
+        statsSection(controller)
       ]),
       group('Help', [
         helpSection(controller)

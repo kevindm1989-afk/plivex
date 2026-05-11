@@ -11,6 +11,7 @@
   "theme_color": "#1a1a1a",
   "lang": "en",
   "dir": "ltr",
+  "categories": ["productivity", "utilities"],
   "icons": [
     {
       "src": "./icons/icon-192.png",

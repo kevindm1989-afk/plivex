@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'plivex-v16';
+const CACHE_VERSION = 'plivex-v17';
 
 const APP_SHELL = [
   './',
@@ -27,6 +27,8 @@ const APP_SHELL = [
   './src/ui/screens/certificate.js',
   './src/ui/screens/help.js',
   './src/ui/screens/print-view.js',
+  './src/ui/screens/stats.js',
+  './src/ui/screens/calendar.js',
   './src/ui/templates.js',
   './vendor/idb.js',
   './icons/icon-192.png',

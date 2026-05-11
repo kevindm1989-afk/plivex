@@ -2,6 +2,17 @@
 
 All notable changes to Plivex are recorded here. Versions follow semantic versioning. Each release is also tagged in git.
 
+## [1.7.0] — 2026-05-11
+
+### Added
+- **Date-range filter** on the entry list. Two `<input type="date">` controls (From / To) added to the filter bar, between the type chips and Clear button. Inclusive on both ends. Composes with search and type filter; "Clear filters" resets all four at once.
+
+### Changed
+- `APP_VERSION` `1.6.0` → `1.7.0`. `CACHE_VERSION` `plivex-v10` → `plivex-v11`.
+
+### Tests
+- No new tests. Date filtering is UI-only, exercising the same in-memory entry list. 180/180 still passing.
+
 ## [1.6.0] — 2026-05-11
 
 ### Added

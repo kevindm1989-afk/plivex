@@ -41,6 +41,14 @@ function entryMatchesText(entry, query) {
   return false;
 }
 
+function entryMatchesDateRange(entry, from, to) {
+  if (!from && !to) return true;
+  const day = typeof entry.created_at === 'string' ? entry.created_at.slice(0, 10) : '';
+  if (from && day < from) return false;
+  if (to && day > to) return false;
+  return true;
+}
+
 export async function render(root, controller) {
   clear(root);
 
@@ -168,6 +176,8 @@ export async function render(root, controller) {
   // Build the filter bar.
   let searchQuery = '';
   let typeFilter = '';
+  let fromDate = '';
+  let toDate = '';
 
   const distinctTypes = Array.from(
     new Set(entries.map((e) => e.payload?.type).filter((t) => typeof t === 'string' && t))
@@ -185,6 +195,33 @@ export async function render(root, controller) {
     }
   });
 
+  const fromInput = el('input', {
+    type: 'date',
+    id: 'filter-date-from',
+    class: 'date-input',
+    attrs: { 'aria-label': 'From date' },
+    onInput: (e) => {
+      fromDate = e.target.value;
+      applyFilters();
+    }
+  });
+  const toInput = el('input', {
+    type: 'date',
+    id: 'filter-date-to',
+    class: 'date-input',
+    attrs: { 'aria-label': 'To date' },
+    onInput: (e) => {
+      toDate = e.target.value;
+      applyFilters();
+    }
+  });
+  const dateRange = el('div', { class: 'date-range' }, [
+    el('label', { for: 'filter-date-from', class: 'date-range-label' }, ['From']),
+    fromInput,
+    el('label', { for: 'filter-date-to', class: 'date-range-label' }, ['To']),
+    toInput
+  ]);
+
   const clearBtn = el(
     'button',
     {
@@ -194,7 +231,11 @@ export async function render(root, controller) {
       onClick: () => {
         searchQuery = '';
         typeFilter = '';
+        fromDate = '';
+        toDate = '';
         searchInput.value = '';
+        fromInput.value = '';
+        toInput.value = '';
         renderChips();
         applyFilters();
       }
@@ -232,8 +273,8 @@ export async function render(root, controller) {
     'div',
     { class: 'filter-bar' },
     distinctTypes.length > 0
-      ? [searchInput, chipsContainer, clearBtn]
-      : [searchInput, clearBtn]
+      ? [searchInput, chipsContainer, dateRange, clearBtn]
+      : [searchInput, dateRange, clearBtn]
   );
   screen.appendChild(filterBar);
 
@@ -283,14 +324,15 @@ export async function render(root, controller) {
   }
 
   function applyFilters() {
-    const active = !!(searchQuery || typeFilter);
+    const active = !!(searchQuery || typeFilter || fromDate || toDate);
     if (active) clearBtn.removeAttribute('hidden');
     else clearBtn.setAttribute('hidden', '');
 
     const filtered = entries.filter(
       (e) =>
         entryMatchesText(e, searchQuery) &&
-        (!typeFilter || e.payload?.type === typeFilter)
+        (!typeFilter || e.payload?.type === typeFilter) &&
+        entryMatchesDateRange(e, fromDate, toDate)
     );
 
     clear(listEl);

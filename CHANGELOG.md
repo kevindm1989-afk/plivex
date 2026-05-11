@@ -2,6 +2,21 @@
 
 All notable changes to Plivex are recorded here. Versions follow semantic versioning. Each release is also tagged in git.
 
+## [1.5.0] — 2026-05-11
+
+### Added
+- **Search bar on the entry list.** Case-insensitive substring match across `title`, `content`, `witness`, `location`, and `type`. Runs over already-decrypted in-memory entries; no extra IndexedDB work.
+- **Type filter chips.** Below the search input, one chip per type that actually exists in the user's data. Tap a chip to filter; tap again to clear. Active chip has the accent treatment.
+- **Month grouping.** Entry rows are grouped under year-month headings (e.g., "May 2026") in descending order. Works in combination with search and type filters.
+- **Clear filters** link button appears when search text or a type filter is active; resets both at once.
+
+### Changed
+- `APP_VERSION` `1.4.0` → `1.5.0`. `CACHE_VERSION` `plivex-v8` → `plivex-v9`.
+- Entry row title is now `<h3>` (was `<h2>`) — gives the new month `<h2>` headers a cleaner outline.
+
+### Tests
+- No new tests. Search/filter/grouping is UI-only, exercising existing `app.listEntries` decryption path. 178/178 still passing.
+
 ## [1.4.0] — 2026-05-11
 
 ### Added

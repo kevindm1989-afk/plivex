@@ -365,7 +365,7 @@ export async function getStatus() {
   return { status: _status };
 }
 
-export const APP_VERSION = '1.4.0';
+export const APP_VERSION = '1.5.0';
 export const EXPORT_FORMAT = 'plivex-export';
 export const EXPORT_FORMAT_VERSION = 1;
 

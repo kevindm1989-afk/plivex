@@ -487,6 +487,48 @@ function autoLockSection() {
   ]);
 }
 
+function formatBytes(n) {
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+  if (n < 1024 * 1024 * 1024) return `${(n / 1024 / 1024).toFixed(1)} MB`;
+  return `${(n / 1024 / 1024 / 1024).toFixed(2)} GB`;
+}
+
+function storageSection() {
+  const body = el('p', { class: 'storage-usage' }, ['Checking…']);
+  const refreshBtn = Button({
+    label: 'Refresh',
+    variant: 'secondary',
+    onClick: () => populate()
+  });
+  async function populate() {
+    const est = await app.getStorageEstimate();
+    if (!est) {
+      body.className = 'storage-usage';
+      body.textContent =
+        'This browser does not expose storage quota information. Entries and photos are still stored locally.';
+      return;
+    }
+    const { usage, quota } = est;
+    const pct = quota > 0 ? (usage / quota) * 100 : 0;
+    body.className = 'storage-usage';
+    if (pct >= 90) body.classList.add('storage-usage-danger');
+    else if (pct >= 70) body.classList.add('storage-usage-warn');
+    body.textContent =
+      quota > 0
+        ? `Using ${formatBytes(usage)} of ${formatBytes(quota)} (${pct.toFixed(1)}%) available to this site.`
+        : `Using ${formatBytes(usage)}.`;
+  }
+  populate();
+  return section('Storage', [
+    el('p', { class: 'lede' }, [
+      'Plivex stores everything in this browser\'s local database. Photos are kept inside each entry\'s encrypted payload, so they count toward this site\'s storage quota.'
+    ]),
+    body,
+    refreshBtn
+  ]);
+}
+
 function aboutSection() {
   return section('About', [
     el('dl', { class: 'about-list' }, [
@@ -554,6 +596,7 @@ export function render(root, controller) {
       verifySection(),
       chainTimestampSection(),
       certificateSection(controller),
+      storageSection(),
       wipeSection(controller),
       aboutSection()
     ])

@@ -3,6 +3,43 @@ import { Button } from '../components/button.js';
 import { iconBack, iconEdit } from '../icons.js';
 import * as app from '../../app.js';
 
+function photoDataUrl(photo) {
+  return `data:${photo.type || 'image/jpeg'};base64,${photo.dataB64}`;
+}
+
+function openPhotoOverlay(photo) {
+  const overlay = el(
+    'div',
+    {
+      class: 'photo-overlay',
+      attrs: { role: 'dialog', 'aria-label': photo.name || 'Photo', tabindex: '-1' },
+      onClick: (e) => {
+        if (e.target === overlay || e.target.classList.contains('photo-overlay-close')) {
+          close();
+        }
+      },
+      onKeyDown: (e) => {
+        if (e.key === 'Escape') close();
+      }
+    },
+    [
+      el('button', {
+        type: 'button',
+        class: 'photo-overlay-close',
+        attrs: { 'aria-label': 'Close' }
+      }, ['×']),
+      el('img', { src: photoDataUrl(photo), alt: photo.name || '' })
+    ]
+  );
+  function close() {
+    overlay.remove();
+    document.body.classList.remove('overlay-open');
+  }
+  document.body.appendChild(overlay);
+  document.body.classList.add('overlay-open');
+  overlay.focus();
+}
+
 export async function render(root, controller, params = {}) {
   clear(root);
 
@@ -127,6 +164,30 @@ export async function render(root, controller, params = {}) {
             ])
           : null,
         el('div', { class: 'entry-detail-content' }, [entry.payload?.content || '']),
+        Array.isArray(entry.payload?.photos) && entry.payload.photos.length > 0
+          ? el(
+              'div',
+              { class: 'photos-gallery', attrs: { 'aria-label': 'Attached photos' } },
+              entry.payload.photos.map((p, i) =>
+                el(
+                  'button',
+                  {
+                    type: 'button',
+                    class: 'photo-tile',
+                    attrs: { 'aria-label': `Open ${p.name || `photo ${i + 1}`}` },
+                    onClick: () => openPhotoOverlay(p)
+                  },
+                  [
+                    el('img', {
+                      src: photoDataUrl(p),
+                      alt: p.name || `photo ${i + 1}`,
+                      attrs: { loading: 'lazy' }
+                    })
+                  ]
+                )
+              )
+            )
+          : null,
         el('div', { class: 'expandable' }, [verifyToggle, verifyBody])
       ].filter(Boolean))
     ])

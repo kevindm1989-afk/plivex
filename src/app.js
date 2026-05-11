@@ -365,7 +365,25 @@ export async function getStatus() {
   return { status: _status };
 }
 
-export const APP_VERSION = '1.5.0';
+export const APP_VERSION = '1.6.0';
+
+// Browser storage usage / quota. Returns null when the platform does not
+// expose StorageManager.estimate (Safari < 17, some embedded webviews).
+export async function getStorageEstimate() {
+  if (
+    typeof navigator === 'undefined' ||
+    !navigator.storage ||
+    typeof navigator.storage.estimate !== 'function'
+  ) {
+    return null;
+  }
+  try {
+    const e = await navigator.storage.estimate();
+    return { usage: e.usage ?? 0, quota: e.quota ?? 0 };
+  } catch {
+    return null;
+  }
+}
 export const EXPORT_FORMAT = 'plivex-export';
 export const EXPORT_FORMAT_VERSION = 1;
 

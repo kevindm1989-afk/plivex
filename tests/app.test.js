@@ -393,6 +393,50 @@ describe('verifyIntegrity', () => {
     await freshAndLocked(t);
     await assert.rejects(() => app.verifyIntegrity(), /verifyIntegrity/);
   });
+
+  test('chain stays valid across mixed photo / no-photo entries', async (t) => {
+    await freshAndUnlocked(t);
+    await app.createEntry({ title: 'no photo', content: 'a' });
+    await app.createEntry({
+      title: 'with photo',
+      content: 'b',
+      photos: [
+        { name: 'x.png', type: 'image/png', dataB64: 'iVBORw0KGgo=' }
+      ]
+    });
+    await app.createEntry({ title: 'no photo again', content: 'c' });
+    assert.deepEqual(await app.verifyIntegrity(), { valid: true, count: 3 });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Photos
+// ---------------------------------------------------------------------------
+
+describe('photo attachments', () => {
+  test('createEntry round-trips photos field unchanged', async (t) => {
+    await freshAndUnlocked(t);
+    const payload = {
+      title: 'site visit',
+      content: 'arrived 9am',
+      photos: [
+        {
+          name: 'one.jpg',
+          type: 'image/jpeg',
+          dataB64:
+            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+ip1sAAAAASUVORK5CYII='
+        },
+        {
+          name: 'two.png',
+          type: 'image/png',
+          dataB64: 'iVBORw0KGgo='
+        }
+      ]
+    };
+    const { id } = await app.createEntry(payload);
+    const got = await app.getEntry(id);
+    assert.deepEqual(got.payload, payload);
+  });
 });
 
 // ---------------------------------------------------------------------------

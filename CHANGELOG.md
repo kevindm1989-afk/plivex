@@ -4,7 +4,9 @@ All notable changes to Plivex are recorded here. Versions follow semantic versio
 
 ## [Unreleased]
 
-- Documentation hardening: CSP meta tag in `index.html`, `SECURITY.md`, `CHANGELOG.md`, `CONTRIBUTING.md`. Last-updated dates filled in across `PRIVACY.md`, `TERMS.md`, and `docs/EVIDENTIARY_USE.md`. `--border` and `--border-strong` already pass WCAG 1.4.11 (set in v1.2.0).
+- Solo-use simplification: removed `CONTRIBUTING.md` and `SECURITY.md` (assumed external contributors/researchers). Trimmed `TERMS.md` to engineering description only (dropped warranty, limitation-of-liability, no-relationship, permitted-use, forking, changes, governing-law, severability, and entire-agreement sections — kept nature-of-software, auto-lock, not-professional-advice, not-evidence-management-software, your-responsibilities, and license-reference).
+- Added `docs/THREAT_MODEL.md` — explicit engineering documentation of what Plivex protects against and what it doesn't. Companion to PRIVACY.md.
+- Earlier in unreleased: CSP meta tag in `index.html`, `CHANGELOG.md`. Last-updated dates filled in across `PRIVACY.md`, `TERMS.md`, and `docs/EVIDENTIARY_USE.md`.
 
 ## [1.2.0] — 2026-05-09
 

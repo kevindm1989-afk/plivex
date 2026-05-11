@@ -109,9 +109,16 @@ function exportSection() {
         const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const today = new Date().toISOString().slice(0, 10);
+        const count = backup.entries.length;
+        // Filename includes count and short chain head so two backups can
+        // be told apart at a glance and matched to their chain state.
+        const head =
+          count > 0
+            ? backup.entries[count - 1].entry_hash.slice(0, 8)
+            : 'genesis';
         const a = document.createElement('a');
         a.href = url;
-        a.download = `plivex-backup-${today}.json`;
+        a.download = `plivex-backup-${today}-${count}entries-${head}.json`;
         document.body.appendChild(a);
         a.click();
         a.remove();
@@ -130,6 +137,108 @@ function exportSection() {
     ]),
     btn,
     status
+  ]);
+}
+
+function backupReminderSection() {
+  const status = el('p', { class: 'inline-status', role: 'status' });
+  let current = app.DEFAULT_BACKUP_REMINDER_DAYS;
+  const select = el('select', {
+    id: 'backup-reminder-days',
+    class: 'select',
+    onChange: async (e) => {
+      const days = Number(e.target.value);
+      status.className = 'inline-status';
+      status.textContent = 'Saving…';
+      try {
+        await app.setBackupReminderDays(days);
+        current = days;
+        status.className = 'inline-status success';
+        status.textContent =
+          days === 0
+            ? 'Backup reminders disabled.'
+            : `Reminder set: every ${days} day${days === 1 ? '' : 's'}.`;
+      } catch (err) {
+        status.className = 'inline-status error';
+        status.textContent = `Could not save: ${err.message}`;
+      }
+    }
+  });
+  for (const d of app.ALLOWED_BACKUP_REMINDER_DAYS) {
+    const label = d === 0 ? 'Off' : `Every ${d} day${d === 1 ? '' : 's'}`;
+    select.appendChild(el('option', { value: String(d) }, [label]));
+  }
+  // Populate current selection asynchronously.
+  app.getBackupReminderDays().then((d) => {
+    current = d;
+    select.value = String(d);
+  });
+
+  return section('Backup reminders', [
+    el('p', { class: 'lede' }, [
+      'Plivex can show a banner on the entry list when you haven\'t exported a backup recently. The reminder is local — Plivex never contacts a server.'
+    ]),
+    el('label', { for: 'backup-reminder-days', class: 'field-label' }, ['Remind me']),
+    select,
+    status
+  ]);
+}
+
+function chainTimestampSection() {
+  const hashEl = el('p', { class: 'mono small chain-head-hash' }, ['…']);
+  const status = el('p', { class: 'inline-status', role: 'status' });
+  const copyBtn = Button({
+    label: 'Copy chain head',
+    onClick: async () => {
+      try {
+        const head = await app.getChainHead();
+        await navigator.clipboard.writeText(head);
+        status.className = 'inline-status success';
+        status.textContent = 'Copied to clipboard.';
+      } catch (err) {
+        status.className = 'inline-status error';
+        status.textContent = `Could not copy: ${err.message}`;
+      }
+    }
+  });
+  const refreshBtn = Button({
+    label: 'Refresh',
+    variant: 'secondary',
+    onClick: async () => {
+      try {
+        const head = await app.getChainHead();
+        hashEl.textContent = head;
+      } catch (err) {
+        hashEl.textContent = `Error: ${err.message}`;
+      }
+    }
+  });
+  // Initial load.
+  app.getChainHead().then((head) => {
+    hashEl.textContent = head;
+  });
+
+  return section('Chain timestamping', [
+    el('p', { class: 'lede' }, [
+      'Submit this hash to a public timestamping service (for example, OpenTimestamps at opentimestamps.org) to anchor your chain to a public record. The hash reveals nothing about your entries\' content. Save the resulting receipt; it proves your chain existed in this state at the time of timestamping.'
+    ]),
+    el('p', { class: 'field-label' }, ['Current chain head (latest entry hash):']),
+    hashEl,
+    el('div', { class: 'btn-row' }, [copyBtn, refreshBtn]),
+    status
+  ]);
+}
+
+function certificateSection(controller) {
+  const btn = Button({
+    label: 'View verification certificate',
+    onClick: () => controller.navigate('certificate')
+  });
+  return section('Verification certificate', [
+    el('p', { class: 'lede' }, [
+      'Generate a one-page printable certificate showing the current chain state. Sign it on paper (and optionally have a witness sign) to create an offline anchor that proves the chain was in this state on this date.'
+    ]),
+    btn
   ]);
 }
 
@@ -366,8 +475,11 @@ export function render(root, controller) {
       changePassphraseSection(controller),
       autoLockSection(),
       exportSection(),
+      backupReminderSection(),
       importSection(controller),
       verifySection(),
+      chainTimestampSection(),
+      certificateSection(controller),
       wipeSection(controller),
       aboutSection()
     ])

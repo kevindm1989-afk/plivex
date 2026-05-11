@@ -16,6 +16,7 @@ import {
   rewrapMasterKey,
   wipeDatabase,
   getAllEntriesById,
+  getLatestEntry,
   getMetaRecord,
   putMetaRecord,
   DB_NAME,
@@ -24,7 +25,7 @@ import {
   STORE_ENTRIES
 } from './storage.js';
 import { encrypt, decrypt, assessPassphrase } from './crypto.js';
-import { appendEntry, verifyChain } from './chain.js';
+import { appendEntry, verifyChain, GENESIS_HASH } from './chain.js';
 
 let _db = null;
 let _dbName = null;
@@ -39,6 +40,10 @@ let _now = () => Date.now();
 
 export const ALLOWED_AUTO_LOCK_MINUTES = [1, 5, 15, 30, 60];
 export const DEFAULT_AUTO_LOCK_MINUTES = 15;
+
+// Backup reminder cadence in days. 0 = disabled.
+export const ALLOWED_BACKUP_REMINDER_DAYS = [0, 3, 7, 14, 30];
+export const DEFAULT_BACKUP_REMINDER_DAYS = 7;
 
 function assertStatus(allowed, op) {
   const ok = Array.isArray(allowed) ? allowed.includes(_status) : _status === allowed;
@@ -236,6 +241,78 @@ export async function setAutoLockMinutes(minutes) {
   return { ok: true };
 }
 
+export async function getBackupReminderDays() {
+  if (!_db) return DEFAULT_BACKUP_REMINDER_DAYS;
+  const rec = await getMetaRecord(_db, 'backup_reminder_days');
+  return rec?.value ?? DEFAULT_BACKUP_REMINDER_DAYS;
+}
+
+export async function setBackupReminderDays(days) {
+  assertUnlockedAndActive('setBackupReminderDays');
+  if (!ALLOWED_BACKUP_REMINDER_DAYS.includes(days)) {
+    throw new Error(
+      `setBackupReminderDays: ${days} is not one of ${ALLOWED_BACKUP_REMINDER_DAYS.join(', ')}`
+    );
+  }
+  await putMetaRecord(_db, 'backup_reminder_days', days);
+  return { ok: true };
+}
+
+export async function getLastExportAt() {
+  if (!_db) return null;
+  const rec = await getMetaRecord(_db, 'last_export_at');
+  return rec?.value ?? null;
+}
+
+export async function shouldRemindBackup() {
+  if (_status !== 'unlocked' && _status !== 'locked') return false;
+  const days = await getBackupReminderDays();
+  if (days === 0) return false;
+  const last = await getLastExportAt();
+  if (!last) return true;
+  const elapsedMs = _now() - new Date(last).getTime();
+  return elapsedMs > days * 24 * 60 * 60 * 1000;
+}
+
+export async function getChainHead() {
+  assertStatus(['locked', 'unlocked'], 'getChainHead');
+  const latest = await getLatestEntry(_db);
+  return latest?.entry_hash ?? GENESIS_HASH;
+}
+
+// Read-only metadata over the chain for the printable certificate. Does
+// not decrypt anything — only structural fields (uuid, created_at,
+// supersedes, entry_hash) are exposed.
+export async function getCertificateData() {
+  assertStatus(['locked', 'unlocked'], 'getCertificateData');
+  const entries = await getAllEntriesById(_db);
+  const supersedes = entries
+    .filter((e) => e.supersedes !== undefined)
+    .map((e) => ({ entry_id: e.id, this_uuid: e.uuid, replaces_uuid: e.supersedes }));
+  if (entries.length === 0) {
+    return {
+      generated_at: new Date().toISOString(),
+      app_version: APP_VERSION,
+      total_entries: 0,
+      chain_head: GENESIS_HASH,
+      first_entry: null,
+      last_entry: null,
+      supersedes: []
+    };
+  }
+  const first = entries[0];
+  const last = entries[entries.length - 1];
+  return {
+    generated_at: new Date().toISOString(),
+    app_version: APP_VERSION,
+    total_entries: entries.length,
+    chain_head: last.entry_hash,
+    first_entry: { id: first.id, uuid: first.uuid, created_at: first.created_at, entry_hash: first.entry_hash },
+    last_entry: { id: last.id, uuid: last.uuid, created_at: last.created_at, entry_hash: last.entry_hash },
+    supersedes
+  };
+}
+
 export async function getStatus() {
   if (_status === 'locked' || _status === 'unlocked') {
     return { status: _status, entryCount: await storageCountEntries(_db) };
@@ -243,7 +320,7 @@ export async function getStatus() {
   return { status: _status };
 }
 
-export const APP_VERSION = '1.2.0';
+export const APP_VERSION = '1.3.0';
 export const EXPORT_FORMAT = 'plivex-export';
 export const EXPORT_FORMAT_VERSION = 1;
 
@@ -325,6 +402,12 @@ export async function exportBackup() {
     entries
   };
   const export_hash = await sha256Hex(JSON.stringify(canonicalSort(body)));
+  // Mark that an export was prepared so the backup-reminder banner can
+  // dismiss until the next cadence window. Best-effort: failure to write
+  // the meta record should not break the export itself.
+  try {
+    await putMetaRecord(_db, 'last_export_at', new Date(_now()).toISOString());
+  } catch {}
   return { ...body, export_hash };
 }
 

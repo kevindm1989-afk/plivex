@@ -304,7 +304,9 @@ function importSection(controller) {
       const ok = await confirmDialog({
         title: 'Replace all data',
         message:
-          'Importing replaces every entry currently stored. This cannot be undone unless you also have an export of the current data.',
+          'Importing REPLACES every entry currently stored. There is no undo.\n\n' +
+          'Before continuing — if your entry list looked empty before this, please force-close Plivex and reopen it first. A rendering bug can make entries appear missing when they are still in storage; importing on top of that wipes the real data.\n\n' +
+          'Only proceed if you have confirmed your current data is actually gone, or you intend to overwrite it.',
         confirmLabel: 'Replace',
         variant: 'danger'
       });

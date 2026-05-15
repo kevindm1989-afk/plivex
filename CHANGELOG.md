@@ -2,6 +2,21 @@
 
 All notable changes to Plivex are recorded here. Versions follow semantic versioning. Each release is also tagged in git.
 
+## [1.14.2] — 2026-05-11
+
+### Added
+- **UI render smoke tests.** New `tests/ui-entry-list.test.js` and `tests/ui-screens.test.js` instantiate the render path for every screen (entry-list, setup, lock, entry-form, entry-detail, settings, certificate, stats, calendar, print-view, help) against a real DOM via happy-dom. They assert the resulting tree contains the expected markers. The v1.14.1 TDZ bug is now regression-tested directly: against the old buggy entry-list.js, 5/5 entry-list tests fail; against the current code, they pass.
+- New `tests/_dom.js` helper that wires up a happy-dom Window, a navigation-capturing controller stub, and a `#root` container.
+- 20 new smoke tests, total now 203/203 passing.
+
+### Changed
+- **Import confirm dialog rewritten to warn against the v1.14.1 failure mode.** The "Replace all data" dialog now explicitly tells the user: if the entry list looked empty before this, force-close and reopen Plivex first, because a rendering bug can make data appear missing when it is still in storage. Importing on top of that wipes the real data.
+- `.dialog-message` now uses `white-space: pre-line` so multi-paragraph confirm messages render with line breaks instead of collapsing into one blob.
+- `APP_VERSION` `1.14.1` → `1.14.2`. `CACHE_VERSION` `plivex-v19` → `plivex-v20`.
+
+### Dependencies
+- Added `happy-dom@20.9.0` as a devDependency. Tests-only; not loaded by the deployed app.
+
 ## [1.14.1] — 2026-05-11
 
 ### Fixed

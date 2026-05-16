@@ -175,6 +175,32 @@ export function AudioRecorder({ onClipReady, onError, disabled = () => false }) 
     }
   }
 
+  // Stop everything (mic stream, MediaRecorder, elapsed-tick interval)
+  // without delivering a clip. Used when the host unmounts the
+  // recorder mid-recording — without this, the mic stream stays open
+  // (LED stays on) until the tab is closed.
+  function cancel() {
+    if (tickHandle) {
+      clearInterval(tickHandle);
+      tickHandle = null;
+    }
+    if (mediaRec) {
+      try {
+        mediaRec.onstop = null;
+        mediaRec.onerror = null;
+        if (mediaRec.state !== 'inactive') mediaRec.stop();
+      } catch {}
+      mediaRec = null;
+    }
+    if (stream) {
+      try { stream.getTracks().forEach((t) => t.stop()); } catch {}
+      stream = null;
+    }
+    chunks = [];
+    state = 'idle';
+    renderState();
+  }
+
   const controls = el('div', { class: 'audio-recorder-row' }, [
     indicator,
     elapsed,
@@ -184,9 +210,25 @@ export function AudioRecorder({ onClipReady, onError, disabled = () => false }) 
   node.appendChild(controls);
   node.appendChild(status);
 
-  // Expose a refresh hook so the host (entry form) can re-evaluate
-  // disabled state when its photo/audio count changes.
+  // Auto-cleanup: when the recorder is removed from the document tree
+  // (entry-form unmounts via clear()), fire cancel() so the mic stream
+  // and timer are released. Without this, navigating Back during a
+  // recording leaves the mic indicator on indefinitely.
+  if (typeof MutationObserver !== 'undefined' && typeof document !== 'undefined') {
+    const observer = new MutationObserver(() => {
+      if (!document.contains(node)) {
+        cancel();
+        observer.disconnect();
+      }
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+  }
+
+  // Public hooks for the host:
+  //   refresh()  — re-evaluate disabled state when photo/audio count changes
+  //   dispose()  — force-cleanup mid-recording (also auto-invoked on detach)
   node.refresh = renderState;
+  node.dispose = cancel;
 
   renderState();
   return node;

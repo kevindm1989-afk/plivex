@@ -183,19 +183,29 @@ export async function createEntry(payload, options = {}) {
   return { ok: true, id, uuid: entry.uuid, entry_hash: entry.entry_hash };
 }
 
+// A single corrupted record must not hide the rest of the list. If
+// decrypt or JSON.parse throws, return a sentinel with payload: null
+// and decryptError set; callers render it as a "could not decrypt"
+// placeholder row instead of failing the entire screen. The chain
+// hash for the affected entry will still fail in verifyIntegrity,
+// where the precise diagnostic belongs.
 async function decryptRecord(record) {
   if (!record) return null;
-  const plaintext = await decrypt(_masterKey, record.encrypted_payload);
-  const payload = JSON.parse(plaintext);
   const out = {
     id: record.id,
     uuid: record.uuid,
     created_at: record.created_at,
     prev_hash: record.prev_hash,
-    entry_hash: record.entry_hash,
-    payload
+    entry_hash: record.entry_hash
   };
   if (record.supersedes !== undefined) out.supersedes = record.supersedes;
+  try {
+    const plaintext = await decrypt(_masterKey, record.encrypted_payload);
+    out.payload = JSON.parse(plaintext);
+  } catch (err) {
+    out.payload = null;
+    out.decryptError = err?.message || 'decryption failed';
+  }
   return out;
 }
 
@@ -365,7 +375,7 @@ export async function getStatus() {
   return { status: _status };
 }
 
-export const APP_VERSION = '1.14.2';
+export const APP_VERSION = '1.14.3';
 
 // Browser storage usage / quota. Returns null when the platform does not
 // expose StorageManager.estimate (Safari < 17, some embedded webviews).
@@ -505,21 +515,37 @@ export async function importBackup(backup) {
     return { ok: false, reason: 'hash_mismatch' };
   }
 
-  await wipeDatabase(_db);
-  _db = await openDB(_dbName);
+  // Validate every entry's shape before we touch storage. Anything
+  // malformed in the entries array is caught here, BEFORE the clear,
+  // so a botched backup cannot leave the user with neither old data
+  // nor new.
+  for (let i = 0; i < body.entries.length; i++) {
+    const e = body.entries[i];
+    if (!e || typeof e !== 'object') {
+      return { ok: false, reason: 'malformed', detail: `entry ${i}: not an object` };
+    }
+    if (typeof e.uuid !== 'string' || typeof e.created_at !== 'string' ||
+        typeof e.prev_hash !== 'string' || typeof e.entry_hash !== 'string' ||
+        !e.encrypted_payload ||
+        typeof e.encrypted_payload.iv !== 'string' ||
+        typeof e.encrypted_payload.ciphertext !== 'string') {
+      return { ok: false, reason: 'malformed', detail: `entry ${i}: missing required field` };
+    }
+  }
 
-  // Single transaction across both stores: every meta + entry write either
-  // commits together or all rolls back. If the transaction aborts (e.g. a
-  // duplicate uuid violates the by_uuid unique index), the database is
-  // left in the same empty state the wipe produced.
+  // Single transaction across both stores covers the wipe AND the
+  // writes. If anything throws, the entire transaction aborts and the
+  // user's existing data is preserved — this is the lesson from the
+  // v1.14.1 incident. Previous implementations called
+  // wipeDatabase()+openDB() outside the transaction; a transient failure
+  // there destroyed old data without committing new.
   try {
     const tx = _db.transaction([STORE_META, STORE_ENTRIES], 'readwrite');
-    // If a put rejects, we exit the try via that rejection; tx.done would
-    // also reject and become an unhandled rejection. Attach a no-op catch
-    // immediately so the secondary rejection is absorbed cleanly.
     tx.done.catch(() => {});
     const metaStore = tx.objectStore(STORE_META);
     const entriesStore = tx.objectStore(STORE_ENTRIES);
+    await metaStore.clear();
+    await entriesStore.clear();
     await metaStore.put({ key: 'schema_version', value: body.schema_version ?? DB_VERSION });
     await metaStore.put({ key: 'created_at', value: new Date().toISOString() });
     await metaStore.put({ key: 'salt', value: base64ToBytes(body.salt) });
@@ -537,8 +563,11 @@ export async function importBackup(backup) {
     }
     await tx.done;
   } catch (err) {
+    // Transaction aborted — old data is intact. Force a relock so the
+    // user re-enters their passphrase (their in-memory master key may
+    // not match the backup's wrapped key once they retry).
     _masterKey = null;
-    _status = 'uninitialized';
+    if (_status === 'unlocked') _status = 'locked';
     return { ok: false, reason: 'import_failed', detail: err.message };
   }
 

@@ -1281,6 +1281,21 @@ body.overlay-open {
   background: rgba(212, 160, 74, 0.10);
 }
 
+.tag-decrypt-failed {
+  color: var(--danger);
+  border-color: var(--danger);
+  background: rgba(255, 107, 107, 0.12);
+}
+
+.entry-row-error-row {
+  border-color: var(--danger);
+  background: rgba(255, 107, 107, 0.06);
+}
+.entry-row-error-row .entry-row-title {
+  color: var(--danger);
+  font-style: italic;
+}
+
 /* Search highlight (mark) ------------------------------------------- */
 
 mark {

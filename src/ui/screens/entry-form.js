@@ -182,11 +182,11 @@ export async function render(root, controller, params = {}) {
     multiple: true,
     hidden: true,
     onChange: async (e) => {
-      const files = Array.from(e.target.files ?? []);
+      const incoming = Array.from(e.target.files ?? []);
       e.target.value = '';
       let added = 0;
       let skipped = [];
-      for (const f of files) {
+      for (const f of incoming) {
         if (photos.length >= MAX_PHOTOS_PER_ENTRY) {
           skipped.push(`${f.name}: max ${MAX_PHOTOS_PER_ENTRY} photos per entry`);
           continue;
@@ -340,9 +340,9 @@ export async function render(root, controller, params = {}) {
     multiple: true,
     hidden: true,
     onChange: async (e) => {
-      const files = Array.from(e.target.files ?? []);
+      const incoming = Array.from(e.target.files ?? []);
       e.target.value = '';
-      for (const f of files) {
+      for (const f of incoming) {
         if (audios.length >= MAX_AUDIO_PER_ENTRY) break;
         await addAudio({ blob: f, name: f.name, type: f.type });
       }

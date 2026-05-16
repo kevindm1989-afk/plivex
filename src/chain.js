@@ -1,5 +1,5 @@
 import { decrypt } from './crypto.js';
-import { STORE_ENTRIES, getEntryByUuid, getLatestEntry } from './storage.js';
+import { getEntryByUuid, getLatestEntry, getAllEntriesById } from './storage.js';
 
 export const GENESIS_HASH = '0'.repeat(64);
 export const HASH_HEX_LENGTH = 64;
@@ -145,13 +145,6 @@ export async function appendEntry(db, payload, options = {}) {
   return { ...entry, prev_hash, entry_hash };
 }
 
-async function getAllEntriesByid(db) {
-  const tx = db.transaction(STORE_ENTRIES, 'readonly');
-  const all = await tx.store.getAll();
-  await tx.done;
-  return all;
-}
-
 function isMalformed(entry) {
   return (
     typeof entry?.uuid !== 'string' ||
@@ -165,7 +158,7 @@ function isMalformed(entry) {
 }
 
 export async function verifyChain(db, masterKey) {
-  const entries = await getAllEntriesByid(db);
+  const entries = await getAllEntriesById(db);
   if (entries.length === 0) return { valid: true, count: 0 };
 
   let expectedPrev = GENESIS_HASH;

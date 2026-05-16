@@ -54,6 +54,16 @@ async function draw() {
     return;
   }
 
+  // Unlocked: if a Web Share Target payload is waiting (stashed by the
+  // service worker on ?share=pending), divert to entry-form pre-filled
+  // with the shared content. Cleared from app + cache once consumed.
+  const sharedPayload = app.getPendingShare();
+  if (sharedPayload && currentScreen !== 'entry-form') {
+    currentScreen = 'entry-form';
+    currentParams = { mode: 'new', shared: sharedPayload };
+    await app.clearPendingShare();
+  }
+
   // unlocked
   if (currentScreen === 'entry-form') {
     return entryForm.render(root, controller, currentParams);
@@ -114,6 +124,21 @@ async function start() {
     root.textContent = `Could not start: ${err.message}`;
     return;
   }
+
+  // Web Share Target arrival: the SW redirected us with ?share=pending
+  // and stashed the parsed payload in a transient cache. Load it before
+  // first draw so the routing in draw() can divert to entry-form once
+  // the user is unlocked. Clean the URL so a reload doesn't loop.
+  try {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get('share') === 'pending') {
+      await app.loadPendingShare();
+      url.searchParams.delete('share');
+      const cleaned = url.pathname + (url.searchParams.toString() ? `?${url.searchParams}` : '') + url.hash;
+      window.history.replaceState(null, '', cleaned);
+    }
+  } catch {}
+
   await draw();
 }
 

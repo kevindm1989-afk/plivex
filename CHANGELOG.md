@@ -2,6 +2,23 @@
 
 All notable changes to Plivex are recorded here. Versions follow semantic versioning. Each release is also tagged in git.
 
+## [1.15.0] — 2026-05-16
+
+### Added
+- **Web Share Target.** Plivex now appears in the OS share sheet of other apps. Tap Share → Plivex from Photos / Files / a browser / etc. and the contents land in a new entry — text becomes content, images become photo attachments, audio becomes audio attachments, anything else becomes a file attachment. Per-entry caps still apply (overflow is dropped).
+- New `share_target` block in `manifest.webmanifest` (POST + multipart/form-data, accepting `image/*`, `audio/*`, `application/pdf`, `text/*`, `*/*`).
+- New `handleShareTarget` in `sw.js` parses the incoming multipart payload, classifies files by MIME, base64-encodes them, and stashes a normalized payload in a transient `plivex-share-staging` cache. Redirects the navigation to `./?share=pending`.
+- `src/app.js`: `loadPendingShare()`, `getPendingShare()`, `clearPendingShare()` — handles the staged payload, holds it in module-scoped state until consumed.
+- `src/ui/ui.js`: bootstrap reads the staging area on `?share=pending`, cleans the URL, and the next `draw()` diverts to `entry-form` with `params.shared` once the user is unlocked.
+- `src/ui/screens/entry-form.js`: new `params.shared` path. Pre-fills title + content + attachments. Edit mode and template prefill remain unchanged; share takes precedence over template but never over an existing original.
+- Help screen: new "Sharing into Plivex" section, including the caveat that the share payload sits briefly unencrypted in a transient cache (no master key yet) and the note about iOS Safari not exposing installed PWAs in the share sheet.
+
+### Changed
+- `APP_VERSION` `1.14.3` → `1.15.0`. `CACHE_VERSION` `plivex-v21` → `plivex-v22`.
+
+### Tests
+- 1 new test in `tests/ui-screens.test.js`: `renders new-entry form pre-filled from a Web Share Target payload`. Asserts title + content + photo/file render hooks all fire when `params.shared` is provided. 207 total passing.
+
 ## [1.14.3] — 2026-05-16
 
 ### Fixed

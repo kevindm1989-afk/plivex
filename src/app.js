@@ -375,7 +375,7 @@ export async function getStatus() {
   return { status: _status };
 }
 
-export const APP_VERSION = '1.14.3';
+export const APP_VERSION = '1.15.0';
 
 // Browser storage usage / quota. Returns null when the platform does not
 // expose StorageManager.estimate (Safari < 17, some embedded webviews).
@@ -596,6 +596,50 @@ export function _resetForTesting() {
   _lastActiveAt = 0;
   _autoLockTimeoutMs = DEFAULT_AUTO_LOCK_MINUTES * 60 * 1000;
   _now = () => Date.now();
+  _pendingShare = null;
+}
+
+// ---------------------------------------------------------------------------
+// Web Share Target (incoming shares from other apps)
+// ---------------------------------------------------------------------------
+//
+// The service worker intercepts the POST to ./share, parses the multipart
+// form data, and stashes a normalized payload in a transient Cache. The
+// app reads that payload here on startup, holds it in module-scoped state
+// until entry-form picks it up, then clears the cache. The share staging
+// area is plain (unencrypted) in the Cache because the master key isn't
+// available before unlock; the window between SW stash and app consume is
+// typically sub-second. This is documented in the help screen.
+
+const SHARE_STAGING_CACHE = 'plivex-share-staging';
+const SHARE_STAGING_KEY = './share-payload';
+
+let _pendingShare = null;
+
+export async function loadPendingShare() {
+  if (typeof caches === 'undefined') return null;
+  try {
+    const cache = await caches.open(SHARE_STAGING_CACHE);
+    const res = await cache.match(new Request(SHARE_STAGING_KEY));
+    if (!res) return null;
+    _pendingShare = await res.json();
+    return _pendingShare;
+  } catch {
+    return null;
+  }
+}
+
+export function getPendingShare() {
+  return _pendingShare;
+}
+
+export async function clearPendingShare() {
+  _pendingShare = null;
+  if (typeof caches === 'undefined') return;
+  try {
+    const cache = await caches.open(SHARE_STAGING_CACHE);
+    await cache.delete(new Request(SHARE_STAGING_KEY));
+  } catch {}
 }
 
 // Browser bootstrap (standalone detection, service worker registration, and

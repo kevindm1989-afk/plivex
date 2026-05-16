@@ -71,11 +71,22 @@ export async function render(root, controller, params = {}) {
   }
 
   // For new entries, optional template seeds title/type. Edit mode
-  // always wins over template prefill.
+  // always wins over template prefill. A Web Share Target payload
+  // (params.shared) takes precedence over template defaults but never
+  // over an existing original (edit mode).
   const template = mode === 'new' && params.template ? getTemplate(params.template) : null;
+  const shared = mode === 'new' && params.shared && typeof params.shared === 'object'
+    ? params.shared
+    : null;
 
-  let title = original?.payload?.title ?? (template?.titlePrefix ?? '');
-  let content = original?.payload?.content ?? '';
+  let title =
+    original?.payload?.title ??
+    (shared?.title ? shared.title : null) ??
+    (template?.titlePrefix ?? '');
+  let content =
+    original?.payload?.content ??
+    (shared?.content ? shared.content : null) ??
+    '';
   let type = original?.payload?.type ?? (template?.type ?? '');
   let witness = original?.payload?.witness ?? '';
   let location = original?.payload?.location ?? '';
@@ -89,7 +100,30 @@ export async function render(root, controller, params = {}) {
   let files = Array.isArray(original?.payload?.files)
     ? original.payload.files.slice()
     : [];
-  let dirty = false;
+
+  // Merge shared attachments respecting per-entry caps.
+  if (shared) {
+    if (Array.isArray(shared.photos)) {
+      for (const p of shared.photos) {
+        if (photos.length >= MAX_PHOTOS_PER_ENTRY) break;
+        photos.push(p);
+      }
+    }
+    if (Array.isArray(shared.audio)) {
+      for (const a of shared.audio) {
+        if (audios.length >= MAX_AUDIO_PER_ENTRY) break;
+        audios.push(a);
+      }
+    }
+    if (Array.isArray(shared.files)) {
+      for (const f of shared.files) {
+        if (files.length >= MAX_FILES_PER_ENTRY) break;
+        files.push(f);
+      }
+    }
+  }
+
+  let dirty = shared ? true : false;
   let busy = false;
 
   const errorEl = el('p', { class: 'screen-error', role: 'alert' });

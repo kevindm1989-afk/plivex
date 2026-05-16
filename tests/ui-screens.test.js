@@ -103,6 +103,29 @@ describe('entry-form screen', () => {
     assert.ok(titleInput.value.startsWith('Incident: '), 'title prefix applied');
   });
 
+  test('renders new-entry form pre-filled from a Web Share Target payload', async (t) => {
+    const { root, controller } = await setupUnlocked(t);
+    const { render } = await import('../src/ui/screens/entry-form.js');
+    await render(root, controller, {
+      mode: 'new',
+      shared: {
+        title: 'shared from elsewhere',
+        content: 'http://example.com',
+        photos: [{ name: 'a.png', type: 'image/png', dataB64: 'iVBORw0KGgo=' }],
+        audio: [],
+        files: [{ name: 'doc.pdf', type: 'application/pdf', dataB64: 'JVBERi0xLjQK' }]
+      }
+    });
+    const inputs = Array.from(root.querySelectorAll('input'));
+    const titleInput = inputs.find((i) => i.value === 'shared from elsewhere');
+    assert.ok(titleInput, 'title prefilled from share');
+    const textarea = root.querySelector('textarea');
+    assert.ok(textarea && textarea.value.includes('http://example.com'), 'content prefilled from share');
+    // Photo + file thumbnails rendered inside the form via render hooks
+    assert.ok(root.querySelector('.photos-grid'), 'photo grid present');
+    assert.ok(root.querySelector('.files-list'), 'files list present');
+  });
+
   test('renders edit-entry form with original payload', async (t) => {
     const { root, controller } = await setupUnlocked(t);
     const created = await app.createEntry({ title: 'orig', content: 'body' });

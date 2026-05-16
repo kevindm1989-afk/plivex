@@ -2,6 +2,28 @@
 
 All notable changes to Plivex are recorded here. Versions follow semantic versioning. Each release is also tagged in git.
 
+## [1.14.3] — 2026-05-16
+
+### Fixed
+- **`decryptRecord` no longer aborts the entire list on a single bad record.** Previously, one corrupted entry would make `app.listEntries()` throw, which the UI rendered as a generic "Failed to load entries." error — looking exactly like the v1.14.1 symptom. Now decrypt errors per-record return a sentinel `{ id, uuid, ..., payload: null, decryptError }` and the other entries still surface. The list and detail screens render the broken row with a `decrypt failed` tag and a clear "[Could not decrypt — entry #N]" title.
+- **`importBackup` is now truly atomic.** Previously the path was `wipeDatabase()` → `openDB()` → transaction. A failure between the wipe and the writes destroyed old data without committing new. Now everything happens inside a single `readwrite` transaction over both stores, using `store.clear()` instead of dropping the database. If anything throws — including the `openDB` retry that was outside the try block — the transaction aborts and existing data is preserved.
+- **Per-entry shape validation in `importBackup`** runs before any storage write. A backup with a malformed entry (missing `uuid`/`created_at`/`prev_hash`/`entry_hash`, or a non-string `encrypted_payload.iv`/`ciphertext`) is now rejected with `reason: 'malformed'` instead of being passed into the put-loop where it could mid-loop abort the transaction.
+- **Audio recorder no longer leaks the mic.** A user starting a recording then tapping Back (instead of Stop) used to leave the mic stream, MediaRecorder, and elapsed-time interval running — mic LED stayed on indefinitely. New `node.dispose()` hook and a `MutationObserver` that watches for the recorder's removal from the DOM both stop everything cleanly.
+- **Follow-up date math is timezone-safe.** `todayISO()` now uses local-zone components (was UTC via `toISOString().slice(0,10)`, off-by-one near midnight for non-UTC users). NaN guards prevent `'Overdue NaNd'` from rendering on malformed date strings imported from a tampered backup.
+- **`chain.js`: removed a duplicate `getAllEntriesByid` (typo'd casing) and pulled `getAllEntriesById` from `storage.js` instead.** Dead-code cleanup; behavior unchanged.
+- **`entry-form.js`: renamed shadowing `const files = ...` to `const incoming` inside the file/audio input handlers.** Previously these locals shadowed the outer form-state `files` array — no functional bug today, but a future edit reaching for the form state would have silently broken attachment persistence.
+- **`entry-list.js`: removed dead `screen.appendChild(listEl)` left over from the v1.14.1 hotfix.** The list element is appended after the filter bar by the existing line at the bottom; the earlier one was a no-op move.
+
+### Changed
+- `APP_VERSION` `1.14.2` → `1.14.3`. `CACHE_VERSION` `plivex-v20` → `plivex-v21`.
+
+### Tests
+- 3 new tests covering the three biggest fixes:
+  - `decryptRecord failure surface > listEntries returns a sentinel for a corrupted record instead of throwing`
+  - `export / import > failed import preserves existing entries — atomicity across the wipe`
+  - `export / import > malformed entry shape in backup is rejected before any wipe`
+- 206 total passing.
+
 ## [1.14.2] — 2026-05-11
 
 ### Added

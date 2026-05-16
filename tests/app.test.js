@@ -371,6 +371,45 @@ describe('supersede', () => {
 });
 
 // ---------------------------------------------------------------------------
+// Decrypt-failure sentinel — one bad record must not hide the rest
+// ---------------------------------------------------------------------------
+
+describe('decryptRecord failure surface', () => {
+  test('listEntries returns a sentinel for a corrupted record instead of throwing', async (t) => {
+    const dbName = await freshAndUnlocked(t);
+    await app.createEntry({ title: 'good 1', content: 'a' });
+    await app.createEntry({ title: 'corrupt me', content: 'b' });
+    await app.createEntry({ title: 'good 2', content: 'c' });
+
+    // Corrupt the middle entry's ciphertext directly in IDB. This
+    // simulates partial storage corruption — every other entry must
+    // still decrypt and surface to the UI.
+    const { openDB } = await import('../vendor/idb.js');
+    const raw = await openDB(dbName);
+    const tx = raw.transaction('entries', 'readwrite');
+    const mid = (await tx.store.getAll())[1];
+    mid.encrypted_payload.ciphertext = new Uint8Array(
+      mid.encrypted_payload.ciphertext.length
+    );
+    await tx.store.put(mid);
+    await tx.done;
+    raw.close();
+    // The app cached its idb handle pre-corruption — reopen via bootstrap so
+    // the next listEntries reads the corrupted bytes.
+    app._resetForTesting();
+    await app.bootstrap({ dbName });
+    await app.unlock(PASSPHRASE);
+
+    const list = await app.listEntries();
+    assert.equal(list.length, 3, 'all three records returned');
+    assert.equal(list[0].payload.title, 'good 1');
+    assert.equal(list[1].payload, null, 'corrupted record has null payload');
+    assert.equal(typeof list[1].decryptError, 'string', 'decryptError flag set');
+    assert.equal(list[2].payload.title, 'good 2');
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Integrity
 // ---------------------------------------------------------------------------
 
@@ -605,6 +644,62 @@ describe('export / import', () => {
     // After abort, no partial state: status is 'uninitialized'.
     const status = await app.getStatus();
     assert.equal(status.status, 'uninitialized');
+  });
+
+  test('failed import preserves existing entries — atomicity across the wipe', async (t) => {
+    // Regression test for the v1.14.1-era importBackup, which called
+    // wipeDatabase() BEFORE the import transaction. A failure mid-import
+    // left the user with no old data AND no new data. The current
+    // implementation wraps the wipe (via store.clear()) inside the same
+    // transaction as the writes, so an abort rolls back the wipe too.
+    await freshAndUnlocked(t);
+    await app.createEntry({ title: 'keep me 1', content: 'x' });
+    await app.createEntry({ title: 'keep me 2', content: 'y' });
+    const validBackup = await app.exportBackup();
+    const beforeCount = await app.countEntries();
+
+    // Build a tampered backup that will fail at the entries put-loop
+    // (duplicate uuid violates the unique by_uuid index).
+    const tampered = JSON.parse(JSON.stringify(validBackup));
+    tampered.entries[1].uuid = tampered.entries[0].uuid;
+    const { export_hash, ...body } = tampered;
+    tampered.export_hash = await rehash(body);
+
+    const result = await app.importBackup(tampered);
+    assert.equal(result.ok, false, 'import failed');
+    assert.equal(result.reason, 'import_failed');
+
+    // Existing data must still be there. Previously it would have been
+    // wiped before the transaction began.
+    assert.equal(await app.countEntries(), beforeCount, 'original entry count preserved');
+
+    // Force the user to re-unlock (the catch path nulls _masterKey).
+    assert.equal((await app.getStatus()).status, 'locked');
+    const unlock = await app.unlock(PASSPHRASE);
+    assert.equal(unlock.ok, true);
+    const list = await app.listEntries();
+    assert.equal(list.length, 2);
+    assert.equal(list[0].payload.title, 'keep me 1');
+    assert.equal(list[1].payload.title, 'keep me 2');
+  });
+
+  test('malformed entry shape in backup is rejected before any wipe', async (t) => {
+    await freshAndUnlocked(t);
+    await app.createEntry({ title: 'still here', content: 'x' });
+    const valid = await app.exportBackup();
+    const before = await app.countEntries();
+
+    // Drop a required field on one entry. Per-entry shape validation
+    // should reject before we touch storage.
+    const tampered = JSON.parse(JSON.stringify(valid));
+    delete tampered.entries[0].entry_hash;
+    const { export_hash, ...body } = tampered;
+    tampered.export_hash = await rehash(body);
+
+    const result = await app.importBackup(tampered);
+    assert.equal(result.ok, false);
+    assert.equal(result.reason, 'malformed');
+    assert.equal(await app.countEntries(), before, 'data preserved');
   });
 
   test('after a failed import, retry with a valid backup succeeds', async (t) => {

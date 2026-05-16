@@ -58,17 +58,30 @@ function entryMatchesDateRange(entry, from, to) {
   return true;
 }
 
+// Local-zone "YYYY-MM-DD". Avoids the off-by-one near midnight that
+// toISOString() (UTC) would produce for users in non-UTC zones.
 function todayISO() {
-  return new Date().toISOString().slice(0, 10);
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }
+
+const DUE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 function followUpStatus(entry, supersededUuids) {
   const due = entry.payload?.followUpDate;
-  if (!due || typeof due !== 'string') return null;
+  if (typeof due !== 'string' || !DUE_RE.test(due)) return null;
   if (supersededUuids.has(entry.uuid)) return null;
   const today = todayISO();
   if (due < today) {
-    const days = Math.floor((Date.parse(today) - Date.parse(due)) / (24 * 60 * 60 * 1000));
+    const dueMs = Date.parse(due + 'T00:00:00Z');
+    const todayMs = Date.parse(today + 'T00:00:00Z');
+    if (Number.isNaN(dueMs) || Number.isNaN(todayMs)) {
+      return { kind: 'overdue', label: 'Overdue', date: due };
+    }
+    const days = Math.floor((todayMs - dueMs) / (24 * 60 * 60 * 1000));
     return { kind: 'overdue', label: `Overdue ${days}d`, date: due };
   }
   if (due === today) return { kind: 'due', label: 'Due today', date: due };
@@ -254,10 +267,10 @@ export async function render(root, controller) {
   composeBtn.classList.add('compose-btn');
   screen.appendChild(composeBtn);
 
-  // List container (entries computed up front; reverse for newest-first).
+  // Entries are computed up front; reverse for newest-first. The list
+  // container is appended after the filter bar below (single append).
   entries.reverse();
   const listEl = el('div', { class: 'entry-list-content' });
-  screen.appendChild(listEl);
 
   if (entries.length === 0) {
     screen.appendChild(
@@ -390,11 +403,18 @@ export async function render(root, controller) {
   function entryRow(entry) {
     const isSuperseded = supersededUuids.has(entry.uuid);
     const isEdit = entry.supersedes !== undefined;
+    const isDecryptFailed = entry.decryptError !== undefined;
     const fu = followUpStatus(entry, supersededUuids);
+    const titleNodes = isDecryptFailed
+      ? [`[Could not decrypt — entry #${entry.id}]`]
+      : highlightMatches(entryTitle(entry.payload), searchQuery);
     return el(
       'li',
       {
-        class: 'entry-row' + (isSuperseded ? ' superseded' : ''),
+        class:
+          'entry-row' +
+          (isSuperseded ? ' superseded' : '') +
+          (isDecryptFailed ? ' entry-row-error-row' : ''),
         attrs: { tabindex: '0', role: 'button' },
         onClick: () => controller.navigate('entry-detail', { id: entry.id }),
         onKeyDown: (e) => {
@@ -409,9 +429,10 @@ export async function render(root, controller) {
           'div',
           { class: 'entry-row-header' },
           [
-            el('h3', { class: 'entry-row-title' },
-              highlightMatches(entryTitle(entry.payload), searchQuery)
-            ),
+            el('h3', { class: 'entry-row-title' }, titleNodes),
+            isDecryptFailed
+              ? el('span', { class: 'tag tag-decrypt-failed' }, ['decrypt failed'])
+              : null,
             entry.payload?.type
               ? el('span', { class: 'tag tag-type' }, [entry.payload.type])
               : null,

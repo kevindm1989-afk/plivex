@@ -171,13 +171,25 @@ export async function render(root, controller, params = {}) {
     }
   }, ['Verification details']);
 
+  const isDecryptFailed = entry.decryptError !== undefined;
+  if (isDecryptFailed) {
+    tags.unshift(el('span', { class: 'tag tag-decrypt-failed' }, ['decrypt failed']));
+  }
+
   root.appendChild(
     el('section', { class: 'screen entry-detail' }, [
       topbar,
       el('div', { class: 'entry-detail-body' }, [
         el('h2', { class: 'entry-detail-title' }, [
-          entry.payload?.title || '(untitled)'
+          isDecryptFailed
+            ? `[Could not decrypt — entry #${entry.id}]`
+            : entry.payload?.title || '(untitled)'
         ]),
+        isDecryptFailed
+          ? el('p', { class: 'screen-error' }, [
+              `This entry could not be decrypted (${entry.decryptError}). The encrypted record is still on disk and counted in the chain; running Verify integrity will surface the exact mismatch.`
+            ])
+          : null,
         tags.length ? el('div', { class: 'tag-row' }, tags) : null,
         el('p', { class: 'entry-detail-date' }, [formatDateTime(entry.created_at)]),
         entry.payload?.witness

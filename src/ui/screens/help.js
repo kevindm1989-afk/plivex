@@ -88,6 +88,12 @@ export function render(root, controller) {
         'PDFs are produced by your browser, not by Plivex. Nothing is uploaded; the file stays on your device unless you choose to share it.'
       ]),
 
+      section('Sharing into Plivex', [
+        'Plivex registers as a share target. From any app that supports the OS share sheet (Photos, Files, your browser), you can tap Share → Plivex and the contents land in a new entry — text becomes the title and content, images become photo attachments, audio becomes audio attachments, other files (PDFs, etc.) become file attachments.',
+        'The share payload sits briefly in a transient browser cache between when the OS hands it to Plivex and when the entry form opens. It is not encrypted during that window because the master key isn\'t available until you unlock. The window is typically sub-second; the staging area is cleared as soon as the entry form receives the data.',
+        'Available wherever the browser supports the Web Share Target API — Android Chrome and similar. iOS Safari does not currently expose installed PWAs in the share sheet.'
+      ]),
+
       section('Auto-lock', [
         'Plivex locks itself after a period of inactivity (default 15 minutes; configurable 1–60 in Settings → Auto-lock). The timer is wall-clock based, so backgrounding the app or locking your phone does not pause it.',
         'Locking only clears the master key from memory. Your data is never deleted by the auto-lock — it just sits there encrypted until you unlock again.'

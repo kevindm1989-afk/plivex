@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'plivex-v21';
+const CACHE_VERSION = 'plivex-v22';
 
 const APP_SHELL = [
   './',
@@ -56,9 +56,19 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   const req = event.request;
-  if (req.method !== 'GET') return;
-
   const url = new URL(req.url);
+
+  // Web Share Target: incoming POST from the OS share sheet. Parse the
+  // multipart payload, classify files by MIME type, stash the normalized
+  // payload in a transient cache, then redirect to the app with a flag
+  // it can pick up on next render. The redirect target is './' which is
+  // already in APP_SHELL — no network required.
+  if (req.method === 'POST' && url.pathname.endsWith('/share')) {
+    event.respondWith(handleShareTarget(req));
+    return;
+  }
+
+  if (req.method !== 'GET') return;
   if (url.origin !== self.location.origin) return;
 
   event.respondWith(
@@ -73,3 +83,49 @@ self.addEventListener('fetch', (event) => {
     })
   );
 });
+
+const SHARE_STAGING_CACHE = 'plivex-share-staging';
+const SHARE_STAGING_KEY = './share-payload';
+
+function bytesToBase64(bytes) {
+  let bin = '';
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin);
+}
+
+async function handleShareTarget(request) {
+  const payload = { title: '', content: '', photos: [], audio: [], files: [] };
+  try {
+    const formData = await request.formData();
+    payload.title = String(formData.get('title') || '').slice(0, 500);
+    const text = String(formData.get('text') || '');
+    const sharedUrl = String(formData.get('url') || '');
+    payload.content = [text, sharedUrl].filter(Boolean).join('\n').trim().slice(0, 50000);
+
+    const files = formData.getAll('files');
+    for (const f of files) {
+      if (!f || typeof f.arrayBuffer !== 'function' || !f.size) continue;
+      const buf = new Uint8Array(await f.arrayBuffer());
+      const item = {
+        name: f.name || 'shared',
+        type: f.type || 'application/octet-stream',
+        dataB64: bytesToBase64(buf)
+      };
+      if (item.type.startsWith('image/')) payload.photos.push(item);
+      else if (item.type.startsWith('audio/')) payload.audio.push(item);
+      else payload.files.push(item);
+    }
+
+    const cache = await caches.open(SHARE_STAGING_CACHE);
+    await cache.put(
+      new Request(SHARE_STAGING_KEY),
+      new Response(JSON.stringify(payload), {
+        headers: { 'Content-Type': 'application/json' }
+      })
+    );
+  } catch {
+    // Best-effort. If parsing fails the user lands on the entry list
+    // without a prefilled form; they can compose manually.
+  }
+  return Response.redirect('./?share=pending', 303);
+}
